@@ -35,7 +35,7 @@
 <body>
 <header>
   <h1>ROM Forge &mdash; Animated Hub Preview</h1>
-  <span class="sub">Clean-block wordmark + a real N64 cart on a flame-lit anvil. Ports to curses.</span>
+  <span class="sub">Embossed wordmark + a gold N64 cart on a flame-lit anvil. Ports to curses.</span>
 </header>
 <div class="wrap">
   <div class="rail">
@@ -62,7 +62,7 @@
   </div>
 </div>
 <script>
-const DATA = {"wordmark": ["██████   ██████  ███    ███", "██   ██ ██    ██ ████  ████", "██████  ██    ██ ██ ████ ██", "██   ██ ██    ██ ██  ██  ██", "██   ██  ██████  ██      ██", "", "███████  ██████  ██████   ██████  ███████", "██      ██    ██ ██   ██ ██       ██", "█████   ██    ██ ██████  ██   ███ █████", "██      ██    ██ ██   ██ ██    ██ ██", "██       ██████  ██   ██  ██████  ███████"], "anvil": ["     ▟██████████████▙", "  ▟████████████████████████▖", "  ████████████████████████", "   ▜██████████████████████▛", "         ████████", "         ████████", "       ▟██████████████▙", "   ▟████████████████████████▖", "   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀"], "cart": [" ▟████████████████▙ ", " ██████████████████ ", " ██▓▓▓▓▓▓▓▓▓▓▓▓▓▓██ ", " ██▓▓▓▓▓ROM▓▓▓▓▓▓██ ", " ██▓▓▓▓▓▓▓▓▓▓▓▓▓▓██ ", " ██████████████████ ", " ██::::::::::::::██ ", " ▜████████████████▛ "]};
+const DATA = {"wordmark": ["██████   ██████  ███    ███", "██   ██ ██    ██ ████  ████", "██████  ██    ██ ██ ████ ██", "██   ██ ██    ██ ██  ██  ██", "██   ██  ██████  ██      ██", "", "███████  ██████  ██████   ██████  ███████", "██      ██    ██ ██   ██ ██       ██", "█████   ██    ██ ██████  ██   ███ █████", "██      ██    ██ ██   ██ ██    ██ ██", "██       ██████  ██   ██  ██████  ███████"], "anvil": ["       ████████████████", "    ████████████████████████", "    ████████████████████████", "     ████████████████████", "          ██████████", "          ██████████", "        ████████████████", "    ████████████████████████", "    ████████████████████████"], "cart": ["▟██████████████████████▙", "████████████████████████", "███┌────────────────┐███", "███│░░░░░░░░░░░░░░░░│███", "███│░░░░░░ROM░░░░░░░│███", "███│░░░░░░░░░░░░░░░░│███", "███└────────────────┘███", "████████████████████████", "███::::::::::::::::::███", "▜██████████████████████▛"]};
 const W = 64;
 
 const GOLD="#ffd75f", GOLDDK="#c79a33", MUT="#9a948a", BORD="#c8912f";
@@ -89,15 +89,36 @@ function put(rowsText, fn){
 }
 function blank(n){ for(let k=0;k<n;k++) overlay.push(new Array(W).fill(null)); }
 
+// Embossed crafted-metal wordmark: molten gradient face + top-left bevel
+// highlight + bottom-right edge shadow, a solid drop-shadow, and a dark halo
+// outline that masks the fire so the letters pop.
+function buildWordmark(){
+  const lines=centerBlock(DATA.wordmark);
+  const Hh=lines.length, gridH=Hh+1;
+  const cells=lines.map(l=>[...l]);
+  const isL=(r,c)=> r>=0&&r<Hh&&c>=0&&c<W && cells[r] && cells[r][c] && cells[r][c]!==" ";
+  const grid=Array.from({length:gridH},()=>new Array(W).fill(null));
+  for(let r=0;r<Hh;r++) for(let c=0;c<W;c++){ if(!isL(r,c)) continue;
+    const t=Hh>1? r/(Hh-1):0;
+    const base=t<0.5? lerpHex("#e8e0c8","#ffcf48",t/0.5):lerpHex("#ffcf48","#ff7e16",(t-0.5)/0.5);
+    const topL=!isL(r-1,c)||!isL(r,c-1);
+    const botR=!isL(r+1,c)||!isL(r,c+1);
+    const col=topL? "#fff2cf" : (botR? lerpHex(base,"#4a2f0a",0.6) : base);
+    grid[r][c]={ch:"█",color:col};
+  }
+  for(let r=0;r<Hh;r++) for(let c=0;c<W;c++){ if(!isL(r,c)) continue;   // drop shadow +1,+1
+    const sr=r+1, sc=c+1;
+    if(sr<gridH && sc<W && !grid[sr][sc] && !isL(sr,sc)) grid[sr][sc]={ch:"█",color:"#1c1206"};
+  }
+  for(let r=0;r<gridH;r++) for(let c=0;c<W;c++){ if(grid[r][c]) continue;   // dark halo outline
+    let near=false;
+    for(let dr=-1;dr<=1&&!near;dr++) for(let dc=-1;dc<=1;dc++){ if(isL(r+dr,c+dc)){near=true;break;} }
+    if(near) grid[r][c]={ch:"█",color:"#0a0805"};
+  }
+  for(let r=0;r<gridH;r++) overlay.push(grid[r]);
+}
 blank(1);
-const WM_ROWS=DATA.wordmark.length;
-// Forged-metal gradient: pale steel up top -> gold -> molten ember at the
-// bottom (heated from the fire below). Drop-shadow chars = dark bronze depth.
-put(DATA.wordmark,(ch,i)=>{ const cp=ch.codePointAt(0);
-  if(cp>=0x2500&&cp<=0x257F) return {color:"#4a3210"};
-  const t=i/(WM_ROWS-1);
-  const col = t<0.5 ? lerpHex("#e8e0c8","#ffcf48",t/0.5) : lerpHex("#ffcf48","#ff7e16",(t-0.5)/0.5);
-  return {color:col}; });
+buildWordmark();
 blank(1);
 const CART_ROWS=DATA.cart.length;
 const CART_TOP_Y=overlay.length;
@@ -109,19 +130,21 @@ const H=overlay.length;
 
 // dynamic (per-frame) overlay colors
 function cartColor(ch,i){
-  if(ch==="▓") return "#d8cdaf";                            // cream ROM-label sticker
-  if(ch==="R"||ch==="O"||ch==="M") return "#2a2a2e";        // dark label text
-  if(ch===":") return "#c89a3a";                            // brass connector pins
-  if(i===CART_ROWS-1) return whiteHot();                    // white-hot base on the anvil
-  if(i===0) return "#5a5b63";                               // top bevel highlight
-  return "#36373d";                                         // dark cart body
+  if(ch==="░") return "#e8e0cc";                            // cream label sticker
+  if(ch==="R"||ch==="O"||ch==="M") return "#2a2010";        // dark label text
+  const cp=ch.codePointAt(0);
+  if(cp>=0x2500&&cp<=0x257F) return "#46371c";             // engraved label frame
+  if(ch===":") return "#7a5e1e";                            // recessed connector pins
+  if(i===CART_ROWS-1) return whiteHot();                    // white-hot base (forged on anvil)
+  if(i<=1) return "#e6c24e";                                // polished gold top highlight
+  if(i>=CART_ROWS-2) return "#9a7322";                      // lower-body gold shadow
+  return "#c89a36";                                         // gold cart body
 }
 function anvilColor(i,x,ch){
   const last=ANVIL_ROWS-1;
   const flick=(Math.sin(frameCount*0.22 + x*0.6 + i*0.45)+1)/2;
-  if(ch==="▀"||ch==="▜"||ch==="▛"||ch==="▝"||ch==="▘")
-    return lerpHex("#7a2c0a","#ffbe55", 0.5+0.5*flick);     // undersides/base: flame reflection
   if(i<=1) return lerpHex("#9aa1ab","#cdd4dd", 0.5);         // top steel rim-highlight (pops vs black)
+  if(i>=last-1) return lerpHex("#7a2c0a","#ffbe55", 0.5+0.5*flick); // base: flame reflection
   let w=Math.pow(i/last,1.25);                               // keep the upper body cool
   const blend=Math.min(0.8, w*(0.6+0.4*flick));
   const steel=(x<W/2-1)?"#3a4047":"#2a2f35";
