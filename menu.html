@@ -120,14 +120,18 @@ function render(){
   L.push(sp(BOT,BORD));
   document.getElementById("screen").innerHTML=L.join("\n");
 }
+function safeRender(){ try{ render(); }catch(e){
+  document.getElementById("screen").textContent="RENDER ERROR: "+e.message+"\n"+(e.stack||""); } }
 // tap to drive
-document.getElementById("screen").addEventListener("click",(e)=>{
-  const rect=e.currentTarget.getBoundingClientRect();
-  if((e.clientY-rect.top) < rect.height/2){ sel=Math.max(0,sel-1); } else { sel=Math.min(N-1,sel+1); }
-  if(sel<top) top=sel; if(sel>=top+VH) top=sel-VH+1; flash=4; idle=40;
-});
-setInterval(render, 1000/15);
-render();
+try{
+  document.getElementById("screen").addEventListener("click",(e)=>{
+    const rect=e.currentTarget.getBoundingClientRect();
+    if((e.clientY-rect.top) < rect.height/2){ sel=Math.max(0,sel-1); } else { sel=Math.min(N-1,sel+1); }
+    if(sel<top) top=sel; if(sel>=top+VH) top=sel-VH+1; flash=4; idle=40;
+  });
+}catch(e){}
+setInterval(safeRender, 1000/15);
+safeRender();
 </script>
 </body>
 </html>
