@@ -231,7 +231,7 @@ function render(){
           if(f.ch!==" " && v>=16){ cell=f; cc=f.color; }        // bright flame in front
           else if(w){ cell={ch:w}; cc="#8a4a14"; }              // library name behind the flames
           else if(f.ch!==" "){ cell=f; cc=f.color; }            // faint flame, no word
-          else { cell={ch:" ",color:null}; cc=null; } }
+          else { cell={ch:" ",color:null}; cc=null; } } }
       if(cc!==cur){ flush(); cur=cc; }
       buf+=cell.ch;
     }
