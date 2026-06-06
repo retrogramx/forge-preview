@@ -35,7 +35,7 @@
 <body>
 <header>
   <h1>ROM Forge &mdash; Animated Hub Preview</h1>
-  <span class="sub">ANSI Shadow wordmark + an N64 cart forged on a flame-lit anvil. This ports to curses.</span>
+  <span class="sub">Forged-metal wordmark + an N64 cart on a flame-lit anvil. Ports to curses.</span>
 </header>
 <div class="wrap">
   <div class="rail">
@@ -62,7 +62,7 @@
   </div>
 </div>
 <script>
-const DATA = {"wordmark": ["██████╗  ██████╗ ███╗   ███╗", "██╔══██╗██╔═══██╗████╗ ████║", "██████╔╝██║   ██║██╔████╔██║", "██╔══██╗██║   ██║██║╚██╔╝██║", "██║  ██║╚██████╔╝██║ ╚═╝ ██║", "╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝", "", "███████╗ ██████╗ ██████╗  ██████╗ ███████╗", "██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝", "█████╗  ██║   ██║██████╔╝██║  ███╗█████╗", "██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝", "██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗", "╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝"], "anvil": ["      ▄▄▄▄▄▄▄▄▄▄▄▄▄▄", "  ▗▄████████████████▙▄▄", " ▟███████████████████████▖", "  ▀▀▀▘████████████▝▀▀▀", "        ██████████", "        ██████████", "     ▄▄████████████▄▄", "  ▗▟████████████████████▙▖", "  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀"], "cart": ["  ▟████▙  ", " ████████ ", " █ ▒▒▒▒ █ ", " █ ▒▒▒▒ █ ", " ▜██████▛ "]};
+const DATA = {"wordmark": ["██████╗  ██████╗ ███╗   ███╗", "██╔══██╗██╔═══██╗████╗ ████║", "██████╔╝██║   ██║██╔████╔██║", "██╔══██╗██║   ██║██║╚██╔╝██║", "██║  ██║╚██████╔╝██║ ╚═╝ ██║", "╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝", "", "███████╗ ██████╗ ██████╗  ██████╗ ███████╗", "██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝", "█████╗  ██║   ██║██████╔╝██║  ███╗█████╗", "██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝", "██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗", "╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝"], "anvil": ["     ▟██████████████▙", "  ▟████████████████████████▖", "  ████████████████████████", "   ▜██████████████████████▛", "         ████████", "         ████████", "       ▟██████████████▙", "   ▟████████████████████████▖", "   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀"], "cart": [" ▗▄▄▄▄▄▄▄▄▖ ", " █ ▏▕▏▕▏▕ █ ", " █▄▄▄▄▄▄▄▄█ ", " █ ╔════╗ █ ", " █ ║ROM ║ █ ", " █ ╚════╝ █ ", " █▀▀▀▀▀▀▀▀█ "]};
 const W = 64;
 
 const GOLD="#ffd75f", GOLDDK="#c79a33", MUT="#9a948a", BORD="#c8912f";
@@ -90,8 +90,14 @@ function put(rowsText, fn){
 function blank(n){ for(let k=0;k<n;k++) overlay.push(new Array(W).fill(null)); }
 
 blank(1);
-put(DATA.wordmark,(ch)=>{ const cp=ch.codePointAt(0);
-  return {color:(cp>=0x2500&&cp<=0x257F)?GOLDDK:GOLD}; });
+const WM_ROWS=DATA.wordmark.length;
+// Forged-metal gradient: pale steel up top -> gold -> molten ember at the
+// bottom (heated from the fire below). Drop-shadow chars = dark bronze depth.
+put(DATA.wordmark,(ch,i)=>{ const cp=ch.codePointAt(0);
+  if(cp>=0x2500&&cp<=0x257F) return {color:"#4a3210"};
+  const t=i/(WM_ROWS-1);
+  const col = t<0.5 ? lerpHex("#e8e0c8","#ffcf48",t/0.5) : lerpHex("#ffcf48","#ff7e16",(t-0.5)/0.5);
+  return {color:col}; });
 blank(1);
 const CART_ROWS=DATA.cart.length;
 const CART_TOP_Y=overlay.length;
@@ -103,23 +109,28 @@ const H=overlay.length;
 
 // dynamic (per-frame) overlay colors
 function cartColor(ch,i){
-  if(ch==="▒") return emberPulse();              // glowing ROM label being forged
-  if(i===CART_ROWS-1) return whiteHot();          // white-hot base on the anvil
-  if(i===0) return "#8a8a93";                      // top bevel highlight
-  return "#42434b";                                // dark cart body
+  if(i===CART_ROWS-1) return whiteHot();                    // white-hot base on the anvil
+  if(ch==="R"||ch==="O"||ch==="M") return emberPulse();     // glowing ROM label being forged
+  const cp=ch.codePointAt(0);
+  if(cp>=0x2550&&cp<=0x256C) return "#6b6c75";              // label frame (double-box)
+  if(ch==="▏"||ch==="▕") return "#9aa0aa";                  // grip ridges
+  if(ch==="▗"||ch==="▄"||ch==="▖") return "#aab0ba";        // top bevel highlight
+  return "#3e3f47";                                         // dark cart body
 }
-function anvilColor(i,x,under){
+function anvilColor(i,x,ch){
   const last=ANVIL_ROWS-1;
   const flick=(Math.sin(frameCount*0.22 + x*0.6 + i*0.45)+1)/2;
-  if(under) return lerpHex("#6e2608","#ffb24a", 0.5+0.5*flick);   // hot underside glow
-  let w=Math.pow(i/last,1.3);                                     // keep the top dark
-  const blend=Math.min(0.82, w*(0.65+0.35*flick));
-  const steel=(x<W/2-1)?"#363c43":"#262b31";
-  return lerpHex(steel,"#dd7415",blend);                         // cool steel -> warm reflection
+  if(ch==="▀"||ch==="▜"||ch==="▛"||ch==="▝"||ch==="▘")
+    return lerpHex("#7a2c0a","#ffbe55", 0.5+0.5*flick);     // undersides/base: flame reflection
+  if(i<=1) return lerpHex("#9aa1ab","#cdd4dd", 0.5);         // top steel rim-highlight (pops vs black)
+  let w=Math.pow(i/last,1.25);                               // keep the upper body cool
+  const blend=Math.min(0.8, w*(0.6+0.4*flick));
+  const steel=(x<W/2-1)?"#3a4047":"#2a2f35";
+  return lerpHex(steel,"#e07a18",blend);                    // cool steel -> warm reflection
 }
 function resolveColor(cell){
-  if(cell.dyn==="cart") return cartColor(cell.ch, /*row within cart*/ rowInCart(cell));
-  if(cell.dyn==="anvil") return anvilColor(cell.i, cell.x, cell.under);
+  if(cell.dyn==="cart") return cartColor(cell.ch, rowInCart(cell));
+  if(cell.dyn==="anvil") return anvilColor(cell.i, cell.x, cell.ch);
   return cell.color;
 }
 function rowInCart(cell){ return cell._ci; }   // set below
