@@ -35,7 +35,7 @@
 <body>
 <header>
   <h1>ROM Forge &mdash; Animated Hub Preview</h1>
-  <span class="sub">Carved serif wordmark + a small 3D angled cart on a hellfire anvil. Ports to curses.</span>
+  <span class="sub">ROM FORGE filled with scrolling library words, over a hellfire anvil. Ports to curses.</span>
 </header>
 <div class="wrap">
   <div class="rail">
@@ -62,7 +62,7 @@
   </div>
 </div>
 <script>
-const DATA = {"wordmark": ["`7MM\"\"\"Mq.   .g8\"\"8q. `7MMM.     ,MMF'", "  MM   `MM..dP'    `YM. MMMb    dPMM", "  MM   ,M9 dM'      `MM M YM   ,M MM", "  MMmmdM9  MM        MM M  Mb  M' MM", "  MM  YM.  MM.      ,MP M  YM.P'  MM", "  MM   `Mb.`Mb.    ,dP' M  `YM'   MM", ".JMML. .JMM. `\"bmmd\"' .JML. `'  .JMML.", "", "`7MM\"\"\"YMM   .g8\"\"8q. `7MM\"\"\"Mq.   .g8\"\"\"bgd `7MM\"\"\"YMM", "  MM    `7 .dP'    `YM. MM   `MM..dP'     `M   MM    `7", "  MM   d   dM'      `MM MM   ,M9 dM'       `   MM   d", "  MM\"\"MM   MM        MM MMmmdM9  MM            MMmmMM", "  MM   Y   MM.      ,MP MM  YM.  MM.    `7MMF' MM   Y  ,", "  MM       `Mb.    ,dP' MM   `Mb.`Mb.     MM   MM     ,M", ".JMML.       `\"bmmd\"' .JMML. .JMM. `\"bmmmdPY .JMMmmmmMMM"], "anvil": ["       ████████████████", "    ████████████████████████", "    ████████████████████████", "     ████████████████████", "          ██████████", "          ██████████", "        ████████████████", "    ████████████████████████", "    ████████████████████████"], "cart": ["     ________", "    /▓▓▓▓▓▓▓/|", "   /▓▓ROM▓▓/ |", "  /_______/  |", "  |::::::::| /", "  |________|/"]};
+const DATA = {"wordmark": ["██████   ██████  ███    ███", "██   ██ ██    ██ ████  ████", "██████  ██    ██ ██ ████ ██", "██   ██ ██    ██ ██  ██  ██", "██   ██  ██████  ██      ██", "", "███████  ██████  ██████   ██████  ███████", "██      ██    ██ ██   ██ ██       ██", "█████   ██    ██ ██████  ██   ███ █████", "██      ██    ██ ██   ██ ██    ██ ██", "██       ██████  ██   ██  ██████  ███████"], "anvil": ["       ████████████████", "    ████████████████████████", "    ████████████████████████", "     ████████████████████", "          ██████████", "          ██████████", "        ████████████████", "    ████████████████████████", "    ████████████████████████"], "stream": "SUPER MARIO   ZELDA   METROID   KIRBY   DONKEY KONG   STAR FOX   POKEMON   FIRE EMBLEM   FINAL FANTASY   CHRONO TRIGGER   DRAGON QUEST   CASTLEVANIA   MEGA MAN   CONTRA   SONIC   STREETS OF RAGE   GOLDEN AXE   PHANTASY STAR   SHINING FORCE   EARTHBOUND   SECRET OF MANA   METAL SLUG   STREET FIGHTER   KING OF FIGHTERS   GHOULS N GHOSTS   BOMBERMAN   NES   SNES   N64   GAME BOY   GBA   GENESIS   DREAMCAST   SATURN   PSX   NEO GEO   TURBOGRAFX   "};
 const W = 64;
 
 const GOLD="#ffd75f", GOLDDK="#c79a33", MUT="#9a948a", BORD="#c8912f";
@@ -99,17 +99,11 @@ function buildWordmark(){
   const isL=(r,c)=> r>=0&&r<Hh&&c>=0&&c<W && cells[r] && cells[r][c] && cells[r][c]!==" ";
   const grid=Array.from({length:gridH},()=>new Array(W).fill(null));
   for(let r=0;r<Hh;r++) for(let c=0;c<W;c++){ if(!isL(r,c)) continue;
-    const t=Hh>1? r/(Hh-1):0;   // dark bronze (top) -> bronze -> muted antique gold (bottom)
-    const base=t<0.5? lerpHex("#5e3e14","#9a701e",t/0.5):lerpHex("#9a701e","#c89832",(t-0.5)/0.5);
-    const isBlock = cells[r][c]==="█";   // bevel only applies to solid block fonts
-    const topL=isBlock&&(!isL(r-1,c)||!isL(r,c-1));
-    const botR=isBlock&&(!isL(r+1,c)||!isL(r,c+1));
-    const col=topL? "#e6c468" : (botR? lerpHex(base,"#1c1004",0.62) : base);
-    grid[r][c]={ch:cells[r][c],color:col};
+    grid[r][c]={dyn:"wm", r, c, Hh};   // letter area: filled with scrolling library words (per-frame)
   }
-  for(let r=0;r<Hh;r++) for(let c=0;c<W;c++){ if(!isL(r,c)) continue;   // drop shadow +1,+1
+  for(let r=0;r<Hh;r++) for(let c=0;c<W;c++){ if(!isL(r,c)) continue;   // solid drop shadow +1,+1
     const sr=r+1, sc=c+1;
-    if(sr<gridH && sc<W && !grid[sr][sc] && !isL(sr,sc)) grid[sr][sc]={ch:cells[r][c],color:"#100a02"};
+    if(sr<gridH && sc<W && !grid[sr][sc] && !isL(sr,sc)) grid[sr][sc]={ch:"█",color:"#100a02"};
   }
   for(let r=0;r<gridH;r++) for(let c=0;c<W;c++){ if(grid[r][c]) continue;   // dark halo outline
     let near=false;
@@ -120,15 +114,13 @@ function buildWordmark(){
 }
 blank(1);
 buildWordmark();
-blank(1);
-const CART_ROWS=DATA.cart.length;
-const CART_TOP_Y=overlay.length;
-const CART_CX=Math.floor(W/2);
-put(DATA.cart,(ch,i,x)=>({dyn:"cart"}));
+blank(2);
+const ANVIL_TOP_Y=overlay.length;
+const ANVIL_CX=Math.floor(W/2);
 const ANVIL_ROWS=DATA.anvil.length;
-put(DATA.anvil,(ch,i,x)=>({dyn:"anvil", i, x, under:(ch==="▀"||ch==="▝"||ch==="▘")}));
-// Dark outline halo around the anvil + cart so they pop off the fire (matches
-// the wordmark treatment for a cohesive look).
+put(DATA.anvil,(ch,i,x)=>({dyn:"anvil", i, x}));
+// Dark outline halo around the anvil so it pops off the fire (matches the
+// wordmark treatment for a cohesive look).
 (function haloSolids(){
   const hits=[];
   for(let y=0;y<overlay.length;y++) for(let x=0;x<W;x++){
@@ -137,7 +129,7 @@ put(DATA.anvil,(ch,i,x)=>({dyn:"anvil", i, x, under:(ch==="▀"||ch==="▝"||ch=
     for(let dy=-1;dy<=1&&!near;dy++) for(let dx=-1;dx<=1;dx++){
       const ny=y+dy, nx=x+dx;
       if(ny>=0&&ny<overlay.length&&nx>=0&&nx<W){ const c=overlay[ny][nx];
-        if(c&&(c.dyn==="anvil"||c.dyn==="cart")){ near=true; break; } }
+        if(c&&c.dyn==="anvil"){ near=true; break; } }
     }
     if(near) hits.push([y,x]);
   }
@@ -146,14 +138,16 @@ put(DATA.anvil,(ch,i,x)=>({dyn:"anvil", i, x, under:(ch==="▀"||ch==="▝"||ch=
 const H=overlay.length;
 
 // dynamic (per-frame) overlay colors
-function cartColor(ch,i){
-  // small 3D cart lying at an angle: lit top face, shaded front/side
-  if(ch==="▓") return "#d8c9a0";                           // cream top-face label
-  if(ch==="R"||ch==="O"||ch==="M") return "#6e4410";       // dark label text
-  if(ch===":") return "#6e5418";                           // connector pins (front)
-  if(ch==="|") return "#9a7322";                           // side faces (shadow)
-  if(i<=2) return "#e0b84e";                                // top-face edges (lit)
-  return "#b8862c";                                        // front edges (mid)
+const STREAM = DATA.stream;
+function wmCell(cell){
+  // scrolling library words clipped to the letter shape; burnt-orange/gold/bronze
+  const off=Math.floor(frameCount/3), len=STREAM.length;
+  let idx=(((cell.c+off+cell.r*17)%len)+len)%len;
+  let ch=STREAM[idx];
+  const t=cell.Hh>1? cell.r/(cell.Hh-1):0;
+  let color=t<0.5? lerpHex("#a86a26","#e6b23a",t/0.5) : lerpHex("#e6b23a","#d2611a",(t-0.5)/0.5);
+  if(ch===" "){ ch="░"; color=lerpHex(color,"#180f04",0.58); }   // dim textured gap keeps letters solid
+  return {ch,color};
 }
 function anvilColor(i,x,ch){
   const last=ANVIL_ROWS-1;
@@ -166,15 +160,9 @@ function anvilColor(i,x,ch){
   return lerpHex(steel,"#e07a18",blend);                    // cool steel -> warm reflection
 }
 function resolveColor(cell){
-  if(cell.dyn==="cart") return cartColor(cell.ch, rowInCart(cell));
   if(cell.dyn==="anvil") return anvilColor(cell.i, cell.x, cell.ch);
   return cell.color;
 }
-function rowInCart(cell){ return cell._ci; }   // set below
-
-// tag cart rows with their local index (for cartColor row logic)
-for(let y=CART_TOP_Y;y<CART_TOP_Y+CART_ROWS;y++)
-  for(let x=0;x<W;x++){ const c=overlay[y][x]; if(c&&c.dyn==="cart") c._ci=y-CART_TOP_Y; }
 
 // ---- fire field ----
 const fire=new Int16Array(W*H); const MAX=36;
@@ -202,7 +190,7 @@ function step(){
   for(let x=0;x<W;x++) fire[(H-1)*W+x]=MAX-((Math.random()*4)|0);
 }
 
-// sparks: rising embers + hammer-strike impact bursts off the cart
+// sparks: rising embers + hammer-strike bursts off the anvil face
 let sparks=[], hammer=0;
 function spawn(){
   if(!embersOn) return;
@@ -211,7 +199,7 @@ function spawn(){
   hammer++;
   if(hammer>13){ hammer=-((Math.random()*8)|0);
     const n=4+((Math.random()*4)|0);
-    for(let k=0;k<n;k++) sparks.push({x:CART_CX+(Math.random()-0.5)*6,y:CART_TOP_Y+0.5,
+    for(let k=0;k<n;k++) sparks.push({x:ANVIL_CX+(Math.random()-0.5)*8,y:ANVIL_TOP_Y+1,
       vy:-(0.5+Math.random()*0.8),vx:(Math.random()-0.5)*1.6,life:9+Math.random()*9,hot:true});
   }
 }
@@ -231,7 +219,10 @@ function render(){
     const flush=()=>{ if(buf){ line+=`<span style="color:${cur}">${esc(buf)}</span>`; buf=""; } };
     for(let x=0;x<W;x++){
       let cell=overlay[y][x], cc;
-      if(cell){ cc=resolveColor(cell); }
+      if(cell){
+        if(cell.dyn==="wm"){ cell=wmCell(cell); cc=cell.color; }
+        else cc=resolveColor(cell);
+      }
       else { const sp=sparkAt(x,y); if(sp){ cell=sp; cc=sp.color; }
         else { const v=fire[y*W+x]; cell=v>0?PAL[v]:{ch:" ",color:null}; cc=cell.color; } }
       if(cc!==cur){ flush(); cur=cc; }
