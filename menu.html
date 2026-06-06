@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ROM Forge - Menu UX demo</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#08080b; color:#d8d2c4;
+    font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif; }
+  header { padding:16px 22px; border-bottom:1px solid #20201a; }
+  header h1 { margin:0; font-size:16px; color:#ffd75f; letter-spacing:.04em; }
+  header .sub { color:#857f74; font-size:13px; }
+  .stage { padding:16px; max-width:760px; }
+  .term { border-radius:10px; overflow:hidden; border:1px solid #2a2820; box-shadow:0 18px 50px -20px #000; background:#000; }
+  .bar { display:flex; align-items:center; gap:8px; padding:8px 12px; background:#141009; border-bottom:1px solid #20201a; color:#857f74; font-size:12px; }
+  .dot { width:11px; height:11px; border-radius:50%; }
+  pre.screen { margin:0; padding:14px 16px; background:#000; overflow-x:auto; cursor:pointer;
+    font-family:"SF Mono","Menlo","DejaVu Sans Mono",monospace; font-size:15px; line-height:1.05; white-space:pre; }
+  .hint { color:#6f6a5f; font-size:12px; padding:8px 2px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ROM Forge &mdash; Menu UX (selection bar, scrollbar, cursor, select-flash)</h1>
+  <span class="sub">Auto-plays; tap the upper/lower half of the screen to move the cursor yourself.</span>
+</header>
+<div class="stage">
+  <div class="term">
+    <div class="bar"><span class="dot" style="background:#ff5f56"></span>
+      <span class="dot" style="background:#ffbd2e"></span>
+      <span class="dot" style="background:#27c93f"></span>
+      <span style="margin-left:6px">forge &mdash; library</span></div>
+    <pre class="screen" id="screen"></pre>
+  </div>
+  <div class="hint">Selection bar = bronze highlight + ▶ cursor &nbsp;|&nbsp; right rail = scrollbar with ▲/▼ when there's more &nbsp;|&nbsp; brief brighten = "Enter/select"</div>
+</div>
+<script>
+const DATA = {"W": 64, "VH": 11, "items": ["NES", "SNES", "GAME BOY", "GAME BOY COLOR", "GAME BOY ADVANCE", "NINTENDO 64", "GENESIS", "MASTER SYSTEM", "GAME GEAR", "SEGA CD", "SATURN", "DREAMCAST", "PLAYSTATION", "NEO GEO", "TURBOGRAFX-16", "PC ENGINE", "WONDERSWAN", "NEO GEO POCKET", "ATARI 2600", "ATARI 7800", "COLECOVISION", "INTELLIVISION", "3DO"]};
+const W=DATA.W, VH=DATA.VH, ITEMS=DATA.items, N=ITEMS.length, LISTW=W-2;
+const BORD="#b8862c", TITLE="#ffd75f", HEAD="#e8c050", BODY="#cdbf9a", DIM="#6f6453",
+      MUT="#9a948a", STEEL="#bcc2cc", SELBG="#5a3e16", SELFG="#ffe79a",
+      FLBG="#8a5e1e", FLFG="#fff3d0", SBTRK="#33291a", SBTHUMB="#8a6a2a", ARROW="#ffd24a";
+let frameCount=0, sel=0, top=0, moveAcc=0, flash=0, idle=0, dir=1;
+function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function sp(s,c){ return c?`<span style="color:${c}">${esc(s)}</span>`:esc(s); }
+function fit(s,w){ return (s+" ".repeat(w)).slice(0,w); }
+const TOP="╔"+"═".repeat(W)+"╗", BOT="╚"+"═".repeat(W)+"╝", SEP="╟"+"─".repeat(W)+"╢";
+function row(inner){ return sp("║",BORD)+inner+sp("║",BORD); }
+
+// ember-particle accent (shared with the library sub-page)
+const EH=3; let embers=[];
+function emberStep(){
+  if(Math.random()<0.5) embers.push({x:Math.random()*W,y:EH-0.4,
+    vy:-(0.14+Math.random()*0.22),vx:(Math.random()-0.5)*0.25,life:9+Math.random()*12});
+  for(const e of embers){ e.y+=e.vy; e.x+=e.vx; e.life--; }
+  embers=embers.filter(e=>e.life>0&&e.y>=0&&e.x>=0&&e.x<W);
+}
+function emberRow(y){
+  const cells=new Array(W).fill(null);
+  for(const e of embers){ if(Math.round(e.y)===y){ const x=Math.round(e.x);
+    if(x>=0&&x<W) cells[x]= e.life>13?["*","#ffd86a"]:(e.life>7?["+","#ef7a18"]:[".","#9e240a"]); } }
+  let out="",buf="",cur=null;
+  const fl=()=>{ if(buf){ out+= cur?`<span style="color:${cur}">${esc(buf)}</span>`:esc(buf); buf=""; } };
+  for(let x=0;x<W;x++){ const c=cells[x],ch=c?c[0]:" ",col=c?c[1]:null; if(col!==cur){fl();cur=col;} buf+=ch; }
+  fl(); return row(out);
+}
+
+// scrollbar cell for viewport row r
+function scrollCell(r){
+  if(N<=VH) return sp(" ",null);
+  if(r===0 && top>0) return sp("▲",ARROW);
+  if(r===VH-1 && top+VH<N) return sp("▼",ARROW);
+  const thumbLen=Math.max(1,Math.round(VH*VH/N));
+  const thumbTop=Math.round(top*(VH-thumbLen)/(N-VH));
+  return (r>=thumbTop && r<thumbTop+thumbLen)? sp("█",SBTHUMB) : sp("░",SBTRK);
+}
+
+function listRow(r){
+  const idx=top+r;
+  let html;
+  if(idx>=N){ html=sp(" ".repeat(LISTW),null); }
+  else if(idx===sel){
+    const cur=(Math.sin(frameCount*0.3)>-0.3)?"▶":" ";   // gentle cursor pulse
+    const txt=fit(" "+cur+" "+ITEMS[idx], LISTW);
+    const bg=flash>0?FLBG:SELBG, fg=flash>0?FLFG:SELFG;
+    html=`<span style="background:${bg};color:${fg}">${esc(txt)}</span>`;
+  } else {
+    html=sp(fit("   "+ITEMS[idx], LISTW), BODY);
+  }
+  return row(html + sp(" ",null) + scrollCell(r));
+}
+
+function render(){
+  frameCount++; emberStep();
+  // auto-demo: drift the cursor, occasionally "select"
+  if(idle<=0){
+    moveAcc++;
+    if(moveAcc>=11){ moveAcc=0; sel+=dir;
+      if(sel>=N){ sel=N-1; dir=-1; } else if(sel<0){ sel=0; dir=1; }
+      if((sel%4)===0) flash=5;
+      if(sel<top) top=sel; if(sel>=top+VH) top=sel-VH+1;
+    }
+  } else idle--;
+  if(flash>0) flash--;
+
+  const L=[];
+  L.push(sp(TOP,BORD));
+  L.push(row(sp("  ",null)+sp(fit("ROM FORGE",9),TITLE)
+    +sp(" ".repeat(W-2-9-18-2),null)+sp(fit("LIBRARY  /  SYSTEM",18),HEAD)+sp("  ",null)));
+  L.push(sp(SEP,BORD));
+  for(let y=0;y<EH;y++) L.push(emberRow(y));
+  L.push(sp(SEP,BORD));
+  for(let r=0;r<VH;r++) L.push(listRow(r));
+  L.push(sp(SEP,BORD));
+  L.push(row(sp("  ",null)+sp((sel+1)+" / "+N+" systems",MUT)
+    +sp(" ".repeat(W-2-((sel+1)+" / "+N+" systems").length),null)));
+  L.push(sp(SEP,BORD));
+  L.push(row(sp(fit("  ↑ ↓  move      enter  select      esc  back      q  quit",W),MUT)));
+  L.push(sp(BOT,BORD));
+  document.getElementById("screen").innerHTML=L.join("\n");
+}
+// tap to drive
+document.getElementById("screen").addEventListener("click",(e)=>{
+  const rect=e.currentTarget.getBoundingClientRect();
+  if((e.clientY-rect.top) < rect.height/2){ sel=Math.max(0,sel-1); } else { sel=Math.min(N-1,sel+1); }
+  if(sel<top) top=sel; if(sel>=top+VH) top=sel-VH+1; flash=4; idle=40;
+});
+setInterval(render, 1000/15);
+render();
+</script>
+</body>
+</html>
