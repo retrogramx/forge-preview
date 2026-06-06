@@ -35,7 +35,7 @@
 <body>
 <header>
   <h1>ROM Forge &mdash; Animated Hub Preview</h1>
-  <span class="sub">Serif ROM FORGE over a hellfire anvil; library names scroll up behind the flames.</span>
+  <span class="sub">Dark-bronze 3D ROM FORGE; library names scroll up in the dark gaps behind the flames.</span>
 </header>
 <div class="wrap">
   <div class="rail">
@@ -62,7 +62,7 @@
   </div>
 </div>
 <script>
-const DATA = {"wordmark": ["`7MM\"\"\"Mq.   .g8\"\"8q. `7MMM.     ,MMF'", "  MM   `MM..dP'    `YM. MMMb    dPMM", "  MM   ,M9 dM'      `MM M YM   ,M MM", "  MMmmdM9  MM        MM M  Mb  M' MM", "  MM  YM.  MM.      ,MP M  YM.P'  MM", "  MM   `Mb.`Mb.    ,dP' M  `YM'   MM", ".JMML. .JMM. `\"bmmd\"' .JML. `'  .JMML.", "", "`7MM\"\"\"YMM   .g8\"\"8q. `7MM\"\"\"Mq.   .g8\"\"\"bgd `7MM\"\"\"YMM", "  MM    `7 .dP'    `YM. MM   `MM..dP'     `M   MM    `7", "  MM   d   dM'      `MM MM   ,M9 dM'       `   MM   d", "  MM\"\"MM   MM        MM MMmmdM9  MM            MMmmMM", "  MM   Y   MM.      ,MP MM  YM.  MM.    `7MMF' MM   Y  ,", "  MM       `Mb.    ,dP' MM   `Mb.`Mb.     MM   MM     ,M", ".JMML.       `\"bmmd\"' .JMML. .JMM. `\"bmmmdPY .JMMmmmmMMM"], "anvil": ["       ████████████████", "    ████████████████████████", "    ████████████████████████", "     ████████████████████", "          ██████████", "          ██████████", "        ████████████████", "    ████████████████████████", "    ████████████████████████"], "stream": "SUPER MARIO   ZELDA   METROID   KIRBY   DONKEY KONG   STAR FOX   POKEMON   FIRE EMBLEM   FINAL FANTASY   CHRONO TRIGGER   DRAGON QUEST   CASTLEVANIA   MEGA MAN   CONTRA   SONIC   STREETS OF RAGE   GOLDEN AXE   PHANTASY STAR   SHINING FORCE   EARTHBOUND   SECRET OF MANA   METAL SLUG   STREET FIGHTER   KING OF FIGHTERS   GHOULS N GHOSTS   BOMBERMAN   NES   SNES   N64   GAME BOY   GBA   GENESIS   DREAMCAST   SATURN   PSX   NEO GEO   TURBOGRAFX   "};
+const DATA = {"wordmark": ["██████   ██████  ███    ███", "██   ██ ██    ██ ████  ████", "██████  ██    ██ ██ ████ ██", "██   ██ ██    ██ ██  ██  ██", "██   ██  ██████  ██      ██", "", "███████  ██████  ██████   ██████  ███████", "██      ██    ██ ██   ██ ██       ██", "█████   ██    ██ ██████  ██   ███ █████", "██      ██    ██ ██   ██ ██    ██ ██", "██       ██████  ██   ██  ██████  ███████"], "anvil": ["       ████████████████", "    ████████████████████████", "    ████████████████████████", "     ████████████████████", "          ██████████", "          ██████████", "        ████████████████", "    ████████████████████████", "    ████████████████████████"], "stream": "SUPER MARIO   ZELDA   METROID   KIRBY   DONKEY KONG   STAR FOX   POKEMON   FIRE EMBLEM   FINAL FANTASY   CHRONO TRIGGER   DRAGON QUEST   CASTLEVANIA   MEGA MAN   CONTRA   SONIC   STREETS OF RAGE   GOLDEN AXE   PHANTASY STAR   SHINING FORCE   EARTHBOUND   SECRET OF MANA   METAL SLUG   STREET FIGHTER   KING OF FIGHTERS   GHOULS N GHOSTS   BOMBERMAN   NES   SNES   N64   GAME BOY   GBA   GENESIS   DREAMCAST   SATURN   PSX   NEO GEO   TURBOGRAFX   "};
 const W = 64;
 
 const GOLD="#ffd75f", GOLDDK="#c79a33", MUT="#9a948a", BORD="#c8912f";
@@ -99,12 +99,12 @@ function buildWordmark(){
   const isL=(r,c)=> r>=0&&r<Hh&&c>=0&&c<W && cells[r] && cells[r][c] && cells[r][c]!==" ";
   const grid=Array.from({length:gridH},()=>new Array(W).fill(null));
   for(let r=0;r<Hh;r++) for(let c=0;c<W;c++){ if(!isL(r,c)) continue;
-    const t=Hh>1? r/(Hh-1):0;   // bronze (top) -> gold -> burnt-orange (bottom)
-    const base=t<0.5? lerpHex("#644316","#b8842a",t/0.5):lerpHex("#b8842a","#cc6e1c",(t-0.5)/0.5);
+    const t=Hh>1? r/(Hh-1):0;   // dark-bronze metal: deep bronze -> bronze -> warm bronze
+    const base=t<0.5? lerpHex("#3e2a0e","#6e4c18",t/0.5):lerpHex("#6e4c18","#9a6c26",(t-0.5)/0.5);
     const isBlock=cells[r][c]==="█";
     const topL=isBlock&&(!isL(r-1,c)||!isL(r,c-1));
     const botR=isBlock&&(!isL(r+1,c)||!isL(r,c+1));
-    const col=topL?"#e6c468":(botR?lerpHex(base,"#1c1004",0.62):base);
+    const col=topL?"#c49a48":(botR?lerpHex(base,"#140c02",0.66):base);   // muted bronze bevel / deep shadow
     grid[r][c]={ch:cells[r][c],color:col};
   }
   for(let r=0;r<Hh;r++) for(let c=0;c<W;c++){ if(!isL(r,c)) continue;   // drop shadow +1,+1
@@ -176,9 +176,9 @@ for(let x=0;x<W;x++) fire[(H-1)*W+x]=MAX;
 let wind=0,intensity=5,embersOn=true,paused=false,fps=22,paletteName="Lava";
 function buildPalette(){
   // Diablo II hellfire: blood-red base -> ember -> antique gold tips (darker, redder).
-  const lava=[[0," ","#000000"],[3,".","#220402"],[6,".","#420804"],[9,":","#671006"],
-    [12,",","#8c1808"],[15,"*","#b3260c"],[18,"*","#d33e0e"],[21,"▒","#e65a12"],
-    [25,"▓","#ef7a18"],[29,"▓","#e89a2c"],[32,"█","#d8a83a"],[34,"█","#e8c860"],[36,"█","#f6e6a8"]];
+  const lava=[[0," ","#000000"],[7,".","#5a0e04"],[10,":","#7c1808"],[13,",","#9e240a"],
+    [16,"*","#bf300c"],[19,"*","#d6480e"],[22,"▒","#e85e12"],[25,"▓","#ef7a18"],
+    [29,"▓","#e89a2c"],[32,"█","#d8a83a"],[34,"█","#e8c860"],[36,"█","#f6e6a8"]];
   const ember=[[0," ","#000000"],[4,".","#241a06"],[9,":","#5a3a08"],[14,"*","#8a5a0c"],
     [19,"▒","#b8800f"],[24,"▓","#e0a81a"],[29,"▓","#ffc83e"],[33,"█","#ffe06a"],[36,"█","#fff3cf"]];
   const stops=paletteName==="Lava"?lava:ember; const pal=[];
@@ -227,13 +227,11 @@ function render(){
       let cell=overlay[y][x], cc;
       if(cell){ cc=resolveColor(cell); }
       else { const sp=sparkAt(x,y); if(sp){ cell=sp; cc=sp.color; }
-        else { const v=fire[y*W+x];
-          if(v>=10){ cell=PAL[v]; cc=cell.color; }              // flame at the forefront
-          else { const w=bgWord(x,y);
-            if(w){ cell={ch:w}; cc="#5a3410"; }                 // library name peeks through the gap
-            else if(v>0){ cell=PAL[v]; cc=cell.color; }         // faint ember
-            else { cell={ch:" ",color:null}; cc=null; } }
-        } }
+        else { const v=fire[y*W+x]; const f=PAL[v]; const w=bgWord(x,y);
+          if(f.ch!==" " && v>=16){ cell=f; cc=f.color; }        // bright flame in front
+          else if(w){ cell={ch:w}; cc="#8a4a14"; }              // library name behind the flames
+          else if(f.ch!==" "){ cell=f; cc=f.color; }            // faint flame, no word
+          else { cell={ch:" ",color:null}; cc=null; } }
       if(cc!==cur){ flush(); cur=cc; }
       buf+=cell.ch;
     }
