@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ROM Forge - Library (D2 sub-page mock)</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#08080b; color:#d8d2c4;
+    font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif; }
+  header { padding:16px 22px; border-bottom:1px solid #20201a; }
+  header h1 { margin:0; font-size:16px; color:#ffd75f; letter-spacing:.04em; }
+  header .sub { color:#857f74; font-size:13px; }
+  .stage { padding:16px; max-width:760px; }
+  .term { border-radius:10px; overflow:hidden; border:1px solid #2a2820; box-shadow:0 18px 50px -20px #000; background:#000; }
+  .bar { display:flex; align-items:center; gap:8px; padding:8px 12px; background:#141009; border-bottom:1px solid #20201a; color:#857f74; font-size:12px; }
+  .dot { width:11px; height:11px; border-radius:50%; }
+  pre.screen { margin:0; padding:14px 16px; background:#000; overflow-x:auto;
+    font-family:"SF Mono","Menlo","DejaVu Sans Mono",monospace; font-size:15px; line-height:1.05; white-space:pre; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ROM Forge &mdash; Library sub-page (D2 calm chrome + ember accent)</h1>
+  <span class="sub">Shared frame/palette with the splash; thin animated ember strip up top; no fire behind the data.</span>
+</header>
+<div class="stage">
+  <div class="term">
+    <div class="bar"><span class="dot" style="background:#ff5f56"></span>
+      <span class="dot" style="background:#ffbd2e"></span>
+      <span class="dot" style="background:#27c93f"></span>
+      <span style="margin-left:6px">forge &mdash; library</span></div>
+    <pre class="screen" id="screen"></pre>
+  </div>
+</div>
+<script>
+const DATA = {"rows": [["NES", 42, 120, 31], ["SNES", 58, 140, 44], ["GAME BOY", 35, 90, 28], ["GBC", 22, 70, 18], ["GBA", 40, 110, 30], ["N64", 26, 60, 20], ["GENESIS", 48, 130, 36], ["MASTER SYSTEM", 14, 50, 10], ["PSX", 31, 150, 22], ["SATURN", 9, 60, 6], ["DREAMCAST", 12, 45, 9], ["NEO GEO", 18, 40, 15]], "W": 64};
+const W = DATA.W;
+const BORD="#b8862c", TITLE="#ffd75f", HEAD="#e8c050", BODY="#cdbf9a",
+      SYSCOL="#c89a4a", DIM="#5a5040", TOTAL="#ffe79a", MUT="#9a948a",
+      CURSOR="#c0301a", BARDIM="#33291a";
+let frameCount=0;
+function lerpHex(a,b,t){ const A=[1,3,5].map(k=>parseInt(a.slice(k,k+2),16));
+  const B=[1,3,5].map(k=>parseInt(b.slice(k,k+2),16));
+  const c=A.map((v,k)=>Math.round(v+(B[k]-v)*t)); return `rgb(${c[0]},${c[1]},${c[2]})`; }
+function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function sp(s,c){ return `<span style="color:${c}">${esc(s)}</span>`; }
+function pad(s){ return (s+" ".repeat(W)).slice(0,W); }
+
+// frame pieces
+const TOP="╔"+"═".repeat(W)+"╗", BOT="╚"+"═".repeat(W)+"╝", SEP="╟"+"─".repeat(W)+"╢";
+function rowHTML(inner){ return sp("║",BORD)+inner+sp("║",BORD); }
+
+// ---- thin animated ember strip (2 rows) as the header accent ----
+const EH=2; const ember=new Int16Array(W*EH); const EMAX=24;
+function emberStep(){
+  for(let x=0;x<W;x++) for(let y=1;y<EH;y++){
+    const below=ember[y*W+x]; const d=(Math.random()*3)|0;
+    let nx=x-d+1; if(nx<0)nx=0; if(nx>=W)nx=W-1;
+    ember[(y-1)*W+nx]=Math.max(0,below-(d&1));
+  }
+  for(let x=0;x<W;x++) ember[(EH-1)*W+x]=EMAX-((Math.random()*8)|0);
+}
+function emberRow(y){
+  let out="", buf="", cur=null;
+  const flush=()=>{ if(buf){ out+=`<span style="color:${cur}">${esc(buf)}</span>`; buf=""; } };
+  for(let x=0;x<W;x++){
+    const v=ember[y*W+x];
+    let ch=" ", col=null;
+    if(v>16){ ch="▓"; col="#e8a83a"; } else if(v>10){ ch="▒"; col="#d2641a"; }
+    else if(v>5){ ch="░"; col="#8c1808"; } else if(v>1){ ch="."; col="#5a0e04"; }
+    if(col!==cur){ flush(); cur=col; } buf+=ch;
+  }
+  flush();
+  return rowHTML(out);
+}
+
+// ---- progress bar in fire gradient ----
+function bar(done,total,width){
+  const fill=total<=0?0:Math.round(done/total*width);
+  let out="";
+  for(let i=0;i<width;i++){
+    if(i<fill){ const t=i/Math.max(1,width-1);
+      out+=sp("█", lerpHex("#9e240a", lerpHex("#e85e12","#e8c050",t), t)); }
+    else out+=sp("░", BARDIM);
+  }
+  return out;
+}
+
+const STEEL="#bcc2cc";
+function fit(t,w){ return (t+" ".repeat(w)).slice(0,w); }
+function render(){
+  frameCount++; emberStep();
+  const L=[];
+  L.push(sp(TOP,BORD));
+  // header: ROM FORGE (gold) left, LIBRARY (gold) right
+  L.push(rowHTML(sp("  ",BODY)+sp(fit("ROM FORGE",9),TITLE)
+    +sp(" ".repeat(W-2-9-7-2),BODY)+sp(fit("LIBRARY",7),HEAD)+sp("  ",BODY)));
+  L.push(sp(SEP,BORD));
+  for(let y=0;y<EH;y++) L.push(emberRow(y));          // animated ember accent
+  L.push(sp(SEP,BORD));
+  // column headers (aligned to data columns: name16 coll11 forged10 bar12 pad13)
+  L.push(rowHTML(sp(fit("  System",18),HEAD)+sp(fit("Collected",11),HEAD)
+    +sp(fit("Forged",10),HEAD)+sp(fit("Complete",25),HEAD)));
+  L.push(rowHTML(sp(" ".repeat(W),BODY)));
+  let tc=0,tt=0,tf=0;
+  for(const [name,c,t,f] of DATA.rows){
+    tc+=c; tt+=t; tf+=f;
+    L.push(rowHTML(sp("  ",BODY)+sp(fit(name,16),SYSCOL)
+      +sp(fit(c+"/"+t,11),BODY)+sp(fit(f+"/"+t,10),BODY)
+      +bar(c,t,12)+sp(" ".repeat(13),BODY)));
+  }
+  L.push(rowHTML(sp(" ".repeat(W),BODY)));
+  const pct=tt? Math.round(tc*100/tt):0, pctstr=pct+"%";
+  L.push(rowHTML(sp("  ",BODY)+sp(fit("TOTAL",16),TOTAL)+sp(fit(tc+"/"+tt,11),TOTAL)
+    +sp(fit(tf+"/"+tt,10),TOTAL)+sp(" ".repeat(25-pctstr.length)+pctstr,TOTAL)));
+  L.push(sp(SEP,BORD));
+  // status bar: name (gold) / tier (steel) / forging level (gold)
+  L.push(rowHTML(sp("  ",BODY)+sp("TIGER0295",TITLE)+sp("      ",BODY)
+    +sp("Apprentice",STEEL)+sp("      ",BODY)+sp("Forging Lv 1",HEAD)
+    +sp(" ".repeat(W-2-9-6-10-6-12),BODY)));
+  L.push(sp(SEP,BORD));
+  L.push(rowHTML(sp(fit("  up/down move   enter select   esc back   q quit",W),MUT)));
+  L.push(sp(BOT,BORD));
+  document.getElementById("screen").innerHTML=L.join("\n");
+}
+setInterval(render, 1000/12);
+render();
+</script>
+</body>
+</html>
