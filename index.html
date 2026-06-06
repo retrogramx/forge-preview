@@ -35,7 +35,7 @@
 <body>
 <header>
   <h1>ROM Forge &mdash; Animated Hub Preview</h1>
-  <span class="sub">Embossed wordmark + a gold N64 cart on a flame-lit anvil. Ports to curses.</span>
+  <span class="sub">Diablo II palette: bronze wordmark, hellfire, gold N64 cart. Ports to curses.</span>
 </header>
 <div class="wrap">
   <div class="rail">
@@ -62,7 +62,7 @@
   </div>
 </div>
 <script>
-const DATA = {"wordmark": ["██████   ██████  ███    ███", "██   ██ ██    ██ ████  ████", "██████  ██    ██ ██ ████ ██", "██   ██ ██    ██ ██  ██  ██", "██   ██  ██████  ██      ██", "", "███████  ██████  ██████   ██████  ███████", "██      ██    ██ ██   ██ ██       ██", "█████   ██    ██ ██████  ██   ███ █████", "██      ██    ██ ██   ██ ██    ██ ██", "██       ██████  ██   ██  ██████  ███████"], "anvil": ["       ████████████████", "    ████████████████████████", "    ████████████████████████", "     ████████████████████", "          ██████████", "          ██████████", "        ████████████████", "    ████████████████████████", "    ████████████████████████"], "cart": ["▟██████████████████████▙", "████████████████████████", "███┌────────────────┐███", "███│░░░░░░░░░░░░░░░░│███", "███│░░░░░░ROM░░░░░░░│███", "███│░░░░░░░░░░░░░░░░│███", "███└────────────────┘███", "████████████████████████", "███::::::::::::::::::███", "▜██████████████████████▛"]};
+const DATA = {"wordmark": ["██████   ██████  ███    ███", "██   ██ ██    ██ ████  ████", "██████  ██    ██ ██ ████ ██", "██   ██ ██    ██ ██  ██  ██", "██   ██  ██████  ██      ██", "", "███████  ██████  ██████   ██████  ███████", "██      ██    ██ ██   ██ ██       ██", "█████   ██    ██ ██████  ██   ███ █████", "██      ██    ██ ██   ██ ██    ██ ██", "██       ██████  ██   ██  ██████  ███████"], "anvil": ["       ████████████████", "    ████████████████████████", "    ████████████████████████", "     ████████████████████", "          ██████████", "          ██████████", "        ████████████████", "    ████████████████████████", "    ████████████████████████"], "cart": ["▟██████████████████████▙", "████████████████████████", "███┌────────────────┐███", "███│▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│███", "███│▓▓▓▓▓▓ROM▓▓▓▓▓▓▓│███", "███│▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│███", "███└────────────────┘███", "████████████████████████", "███::::::::::::::::::███", "▜██████████████████████▛"]};
 const W = 64;
 
 const GOLD="#ffd75f", GOLDDK="#c79a33", MUT="#9a948a", BORD="#c8912f";
@@ -99,21 +99,21 @@ function buildWordmark(){
   const isL=(r,c)=> r>=0&&r<Hh&&c>=0&&c<W && cells[r] && cells[r][c] && cells[r][c]!==" ";
   const grid=Array.from({length:gridH},()=>new Array(W).fill(null));
   for(let r=0;r<Hh;r++) for(let c=0;c<W;c++){ if(!isL(r,c)) continue;
-    const t=Hh>1? r/(Hh-1):0;
-    const base=t<0.5? lerpHex("#e8e0c8","#ffcf48",t/0.5):lerpHex("#ffcf48","#ff7e16",(t-0.5)/0.5);
+    const t=Hh>1? r/(Hh-1):0;   // antique bronze (top) -> gold -> bright ember-gold (bottom)
+    const base=t<0.5? lerpHex("#6e4a1c","#b8862c",t/0.5):lerpHex("#b8862c","#f0c850",(t-0.5)/0.5);
     const topL=!isL(r-1,c)||!isL(r,c-1);
     const botR=!isL(r+1,c)||!isL(r,c+1);
-    const col=topL? "#fff2cf" : (botR? lerpHex(base,"#4a2f0a",0.6) : base);
+    const col=topL? "#ffe28a" : (botR? lerpHex(base,"#241606",0.62) : base);   // gold bevel highlight
     grid[r][c]={ch:"█",color:col};
   }
   for(let r=0;r<Hh;r++) for(let c=0;c<W;c++){ if(!isL(r,c)) continue;   // drop shadow +1,+1
     const sr=r+1, sc=c+1;
-    if(sr<gridH && sc<W && !grid[sr][sc] && !isL(sr,sc)) grid[sr][sc]={ch:"█",color:"#1c1206"};
+    if(sr<gridH && sc<W && !grid[sr][sc] && !isL(sr,sc)) grid[sr][sc]={ch:"█",color:"#120c03"};
   }
   for(let r=0;r<gridH;r++) for(let c=0;c<W;c++){ if(grid[r][c]) continue;   // dark halo outline
     let near=false;
     for(let dr=-1;dr<=1&&!near;dr++) for(let dc=-1;dc<=1;dc++){ if(isL(r+dr,c+dc)){near=true;break;} }
-    if(near) grid[r][c]={ch:"█",color:"#0a0805"};
+    if(near) grid[r][c]={ch:"█",color:"#080502"};
   }
   for(let r=0;r<gridH;r++) overlay.push(grid[r]);
 }
@@ -126,19 +126,35 @@ const CART_CX=Math.floor(W/2);
 put(DATA.cart,(ch,i,x)=>({dyn:"cart"}));
 const ANVIL_ROWS=DATA.anvil.length;
 put(DATA.anvil,(ch,i,x)=>({dyn:"anvil", i, x, under:(ch==="▀"||ch==="▝"||ch==="▘")}));
+// Dark outline halo around the anvil + cart so they pop off the fire (matches
+// the wordmark treatment for a cohesive look).
+(function haloSolids(){
+  const hits=[];
+  for(let y=0;y<overlay.length;y++) for(let x=0;x<W;x++){
+    if(overlay[y][x]) continue;
+    let near=false;
+    for(let dy=-1;dy<=1&&!near;dy++) for(let dx=-1;dx<=1;dx++){
+      const ny=y+dy, nx=x+dx;
+      if(ny>=0&&ny<overlay.length&&nx>=0&&nx<W){ const c=overlay[ny][nx];
+        if(c&&(c.dyn==="anvil"||c.dyn==="cart")){ near=true; break; } }
+    }
+    if(near) hits.push([y,x]);
+  }
+  for(const [y,x] of hits) overlay[y][x]={ch:"█",color:"#080502"};
+})();
 const H=overlay.length;
 
 // dynamic (per-frame) overlay colors
 function cartColor(ch,i){
-  if(ch==="░") return "#e8e0cc";                            // cream label sticker
-  if(ch==="R"||ch==="O"||ch==="M") return "#2a2010";        // dark label text
+  if(ch==="▓") return "#15110b";                           // recessed dark label window
+  if(ch==="R"||ch==="O"||ch==="M") return "#ffce4a";       // glowing gold label text
   const cp=ch.codePointAt(0);
-  if(cp>=0x2500&&cp<=0x257F) return "#46371c";             // engraved label frame
-  if(ch===":") return "#7a5e1e";                            // recessed connector pins
-  if(i===CART_ROWS-1) return whiteHot();                    // white-hot base (forged on anvil)
-  if(i<=1) return "#e6c24e";                                // polished gold top highlight
-  if(i>=CART_ROWS-2) return "#9a7322";                      // lower-body gold shadow
-  return "#c89a36";                                         // gold cart body
+  if(cp>=0x2500&&cp<=0x257F) return "#5a4420";             // bronze engraved frame
+  if(ch===":") return "#7a5e1e";                           // recessed connector pins
+  if(i===CART_ROWS-1) return whiteHot();                   // white-hot base (forged on anvil)
+  if(i<=1) return "#e6c24e";                               // polished gold top highlight
+  if(i>=CART_ROWS-2) return "#9a7322";                     // lower-body gold shadow
+  return "#c89a36";                                        // gold cart body
 }
 function anvilColor(i,x,ch){
   const last=ANVIL_ROWS-1;
@@ -166,9 +182,10 @@ const fire=new Int16Array(W*H); const MAX=36;
 for(let x=0;x<W;x++) fire[(H-1)*W+x]=MAX;
 let wind=0,intensity=5,embersOn=true,paused=false,fps=22,paletteName="Lava";
 function buildPalette(){
-  const lava=[[0," ","#000000"],[3,".","#3a0c05"],[6,".","#5a1206"],[9,":","#7c1c08"],
-    [12,",","#9e240a"],[15,"*","#bf300c"],[18,"*","#d6480e"],[21,"▒","#ea6010"],
-    [25,"▓","#ff8418"],[29,"▓","#ffab2c"],[32,"█","#ffc83e"],[34,"█","#ffe06a"],[36,"█","#fff3cf"]];
+  // Diablo II hellfire: blood-red base -> ember -> antique gold tips (darker, redder).
+  const lava=[[0," ","#000000"],[3,".","#220402"],[6,".","#420804"],[9,":","#671006"],
+    [12,",","#8c1808"],[15,"*","#b3260c"],[18,"*","#d33e0e"],[21,"▒","#e65a12"],
+    [25,"▓","#ef7a18"],[29,"▓","#e89a2c"],[32,"█","#d8a83a"],[34,"█","#e8c860"],[36,"█","#f6e6a8"]];
   const ember=[[0," ","#000000"],[4,".","#241a06"],[9,":","#5a3a08"],[14,"*","#8a5a0c"],
     [19,"▒","#b8800f"],[24,"▓","#e0a81a"],[29,"▓","#ffc83e"],[33,"█","#ffe06a"],[36,"█","#fff3cf"]];
   const stops=paletteName==="Lava"?lava:ember; const pal=[];
@@ -230,8 +247,10 @@ function render(){
   out+=span("╔"+"═".repeat(W)+"╗",BORD)+"\n";
   out+="║"+span("   FORGE HUB".padEnd(W).slice(0,W),GOLD)+"║\n";
   out+=span("╟"+"─".repeat(W)+"╢",BORD)+"\n";
-  items.forEach((it,i)=>{ const sel=i===0; const txt=(sel?"   >  ":"      ")+it;
-    out+="║"+span(txt.padEnd(W).slice(0,W),sel?GOLD:"#d8cdaf")+"║\n"; });
+  items.forEach((it,i)=>{ const sel=i===0;
+    if(sel){ const rest=("LIBRARY"+" ".repeat(W)).slice(0,W-6);
+      out+="║"+span("   ",GOLD)+span(">> ",  "#c0301a")+span(rest,"#ffd75f")+"║\n"; }
+    else out+="║"+span(("      "+it).padEnd(W).slice(0,W),"#cdbf9a")+"║\n"; });
   out+=span("╟"+"─".repeat(W)+"╢",BORD)+"\n";
   out+="║"+span("   up/down move   enter select   esc back   q quit".padEnd(W).slice(0,W),MUT)+"║\n";
   out+=span("╚"+"═".repeat(W)+"╝",BORD);
