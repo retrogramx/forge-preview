@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ROM Forge Hub - Animated Fire Preview</title>
 <style>
   * { box-sizing: border-box; }
@@ -34,7 +35,7 @@
 <body>
 <header>
   <h1>ROM Forge &mdash; Animated Hub Preview</h1>
-  <span class="sub">ANSI Shadow wordmark + anvil in a live Doom-fire wall. This algorithm ports straight to curses.</span>
+  <span class="sub">ANSI Shadow wordmark + an N64 cart forged on a flame-lit anvil. This ports to curses.</span>
 </header>
 <div class="wrap">
   <div class="rail">
@@ -61,194 +62,171 @@
   </div>
 </div>
 <script>
-const DATA = {"wordmark": ["██████╗  ██████╗ ███╗   ███╗", "██╔══██╗██╔═══██╗████╗ ████║", "██████╔╝██║   ██║██╔████╔██║", "██╔══██╗██║   ██║██║╚██╔╝██║", "██║  ██║╚██████╔╝██║ ╚═╝ ██║", "╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝", "", "███████╗ ██████╗ ██████╗  ██████╗ ███████╗", "██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝", "█████╗  ██║   ██║██████╔╝██║  ███╗█████╗", "██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝", "██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗", "╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝"], "anvil": ["      ▄▄▄▄▄▄▄▄▄▄▄▄▄▄", "  ▗▄████████████████▙▄▄", " ▟███████████████████████▖", "  ▀▀▀▘████████████▝▀▀▀", "        ██████████", "        ██████████", "     ▄▄████████████▄▄", "  ▗▟████████████████████▙▖", "  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀"]};
-const W = 64;                 // inner columns
-const HMENU_GAP = 1;
+const DATA = {"wordmark": ["██████╗  ██████╗ ███╗   ███╗", "██╔══██╗██╔═══██╗████╗ ████║", "██████╔╝██║   ██║██╔████╔██║", "██╔══██╗██║   ██║██║╚██╔╝██║", "██║  ██║╚██████╔╝██║ ╚═╝ ██║", "╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝", "", "███████╗ ██████╗ ██████╗  ██████╗ ███████╗", "██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝", "█████╗  ██║   ██║██████╔╝██║  ███╗█████╗", "██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝", "██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗", "╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝"], "anvil": ["      ▄▄▄▄▄▄▄▄▄▄▄▄▄▄", "  ▗▄████████████████▙▄▄", " ▟███████████████████████▖", "  ▀▀▀▘████████████▝▀▀▀", "        ██████████", "        ██████████", "     ▄▄████████████▄▄", "  ▗▟████████████████████▙▖", "  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀"], "cart": ["  ▟████▙  ", " ████████ ", " █ ▒▒▒▒ █ ", " █ ▒▒▒▒ █ ", " ▜██████▛ "]};
+const W = 64;
 
-// ---- compose the opaque overlay (wordmark + tagline + anvil + status) ----
-function centerBlock(lines){
-  const w = Math.max(...lines.map(l=>[...l].length));
-  const left = Math.max(0, Math.floor((W-w)/2));
-  return lines.map(l=>" ".repeat(left)+l);
-}
-const GOLD="#ffd75f", GOLDDK="#c79a33", STEEL="#c9ced6", STEELDK="#8b9097",
-      EMBER="#ff9a2e", TAG="#ffe79a", BORD="#c8912f", MUT="#9a948a";
-
-// Build banner overlay grid rows (array of {ch,color}[])
-const overlay=[]; let bannerH=0;
-function put(rowsText, colorFn){
-  const block=centerBlock(rowsText);
-  block.forEach((line,i)=>{
-    const r=[]; const chars=[...line];
-    for(let x=0;x<W;x++){ const ch=chars[x]||" ";
-      if(ch===" "){ r.push(null); continue; }
-      const res=colorFn(ch,i,x);
-      r.push(typeof res==="string" ? {ch, color:res} : {ch, ...res});
-    }
-    overlay.push(r);
-  });
-}
-// cel-shaded steel ramp: deep shadow -> highlight
-const STEEL_RAMP=["#4a4f56","#6f757e","#9aa0a8","#c4c9d1","#eef2f8"];
+const GOLD="#ffd75f", GOLDDK="#c79a33", MUT="#9a948a", BORD="#c8912f";
 let frameCount=0;
 function lerpHex(a,b,t){ const A=[1,3,5].map(k=>parseInt(a.slice(k,k+2),16));
   const B=[1,3,5].map(k=>parseInt(b.slice(k,k+2),16));
   const c=A.map((v,k)=>Math.round(v+(B[k]-v)*t)); return `rgb(${c[0]},${c[1]},${c[2]})`; }
 function emberPulse(){ return lerpHex("#d2560f","#ffd86a",(Math.sin(frameCount*0.16)+1)/2); }
-function anvilColor(ch,i,x){
-  const last=DATA.anvil.length-1;
-  if(i===0) return {color:EMBER, pulse:true};                 // heated top bar (glows)
-  if(ch==="▀"||ch==="▝"||ch==="▘") return "#3f444b";          // undersides -> deep shadow
-  let b=2;
-  b += (x < W/2-1 ? 1 : 0) - (x > W/2+5 ? 1 : 0);             // light from upper-left
-  if(i<=2) b+=1;                                              // face catches light
-  if(i===6) b+=1;                                             // top of base catches light
-  if(i===last) b-=2;                                          // base sits in shadow
-  return STEEL_RAMP[Math.max(0,Math.min(4,b))];
+function whiteHot(){ return lerpHex("#ff8c1a","#fff3d6",(Math.sin(frameCount*0.33)+1)/2); }
+
+function centerBlock(lines){ const w=Math.max(...lines.map(l=>[...l].length));
+  const left=Math.max(0,Math.floor((W-w)/2)); return lines.map(l=>" ".repeat(left)+l); }
+
+// ---- overlay (opaque foreground the fire can't paint over) ----
+const overlay=[];
+function put(rowsText, fn){
+  centerBlock(rowsText).forEach((line,i)=>{
+    const chars=[...line], r=[];
+    for(let x=0;x<W;x++){ const ch=chars[x]||" ";
+      if(ch===" "){ r.push(null); continue; }
+      r.push({ch, ...fn(ch,i,x)}); }
+    overlay.push(r);
+  });
 }
 function blank(n){ for(let k=0;k<n;k++) overlay.push(new Array(W).fill(null)); }
 
-// wordmark (box-drawing shadow chars -> darker gold; blocks -> bright gold)
-put(DATA.wordmark, (ch)=>{ const cp=ch.codePointAt(0);
-  return (cp>=0x2500&&cp<=0x257F)?GOLDDK:GOLD; });
 blank(1);
-// tagline
-put(["Welcome to ROM Forge"], ()=>TAG);
+put(DATA.wordmark,(ch)=>{ const cp=ch.codePointAt(0);
+  return {color:(cp>=0x2500&&cp<=0x257F)?GOLDDK:GOLD}; });
 blank(1);
-// anvil: top face row glows ember, rest steel (shadow underside darker)
-put(DATA.anvil, anvilColor);
-bannerH = overlay.length;
+const CART_ROWS=DATA.cart.length;
+const CART_TOP_Y=overlay.length;
+const CART_CX=Math.floor(W/2);
+put(DATA.cart,(ch,i,x)=>({dyn:"cart"}));
+const ANVIL_ROWS=DATA.anvil.length;
+put(DATA.anvil,(ch,i,x)=>({dyn:"anvil", i, x, under:(ch==="▀"||ch==="▝"||ch==="▘")}));
+const H=overlay.length;
+
+// dynamic (per-frame) overlay colors
+function cartColor(ch,i){
+  if(ch==="▒") return emberPulse();              // glowing ROM label being forged
+  if(i===CART_ROWS-1) return whiteHot();          // white-hot base on the anvil
+  if(i===0) return "#8a8a93";                      // top bevel highlight
+  return "#42434b";                                // dark cart body
+}
+function anvilColor(i,x,under){
+  const last=ANVIL_ROWS-1;
+  const flick=(Math.sin(frameCount*0.22 + x*0.6 + i*0.45)+1)/2;
+  if(under) return lerpHex("#6e2608","#ffb24a", 0.5+0.5*flick);   // hot underside glow
+  let w=Math.pow(i/last,1.3);                                     // keep the top dark
+  const blend=Math.min(0.82, w*(0.65+0.35*flick));
+  const steel=(x<W/2-1)?"#363c43":"#262b31";
+  return lerpHex(steel,"#dd7415",blend);                         // cool steel -> warm reflection
+}
+function resolveColor(cell){
+  if(cell.dyn==="cart") return cartColor(cell.ch, /*row within cart*/ rowInCart(cell));
+  if(cell.dyn==="anvil") return anvilColor(cell.i, cell.x, cell.under);
+  return cell.color;
+}
+function rowInCart(cell){ return cell._ci; }   // set below
+
+// tag cart rows with their local index (for cartColor row logic)
+for(let y=CART_TOP_Y;y<CART_TOP_Y+CART_ROWS;y++)
+  for(let x=0;x<W;x++){ const c=overlay[y][x]; if(c&&c.dyn==="cart") c._ci=y-CART_TOP_Y; }
 
 // ---- fire field ----
-const H = bannerH;            // fire spans the whole banner height
-const fire = new Int16Array(W*H);
-const MAX=36;
-function seed(){ for(let x=0;x<W;x++) fire[(H-1)*W+x]=MAX; }
-seed();
-
-let wind=0, intensity=5, embersOn=true, paused=false, fps=22, paletteName="Lava";
-
-// palette: index 0..MAX -> {ch,color}
+const fire=new Int16Array(W*H); const MAX=36;
+for(let x=0;x<W;x++) fire[(H-1)*W+x]=MAX;
+let wind=0,intensity=5,embersOn=true,paused=false,fps=22,paletteName="Lava";
 function buildPalette(){
-  const lava=[
-    [0," ","#000000"],[3,".","#3a0c05"],[6,".","#5a1206"],[9,":","#7c1c08"],
+  const lava=[[0," ","#000000"],[3,".","#3a0c05"],[6,".","#5a1206"],[9,":","#7c1c08"],
     [12,",","#9e240a"],[15,"*","#bf300c"],[18,"*","#d6480e"],[21,"▒","#ea6010"],
     [25,"▓","#ff8418"],[29,"▓","#ffab2c"],[32,"█","#ffc83e"],[34,"█","#ffe06a"],[36,"█","#fff3cf"]];
-  const ember=[
-    [0," ","#000000"],[4,".","#241a06"],[9,":","#5a3a08"],[14,"*","#8a5a0c"],
+  const ember=[[0," ","#000000"],[4,".","#241a06"],[9,":","#5a3a08"],[14,"*","#8a5a0c"],
     [19,"▒","#b8800f"],[24,"▓","#e0a81a"],[29,"▓","#ffc83e"],[33,"█","#ffe06a"],[36,"█","#fff3cf"]];
-  const stops = paletteName==="Lava"?lava:ember;
-  const pal=[];
+  const stops=paletteName==="Lava"?lava:ember; const pal=[];
   for(let v=0;v<=MAX;v++){ let s=stops[0]; for(const st of stops){ if(v>=st[0]) s=st; } pal[v]={ch:s[1],color:s[2]}; }
   return pal;
 }
 let PAL=buildPalette();
-
 function step(){
-  // propagate upward with cooling + wind
-  for(let x=0;x<W;x++){
-    for(let y=1;y<H;y++){
-      const src=y*W+x;
-      const below=fire[src];
-      const decay=(Math.random()*3)|0;
-      const cool = decay & 1 ? 1 : 0;
-      const extra = (Math.random()*(10-intensity)/3)|0;   // higher intensity -> less cooling -> taller
-      let nx = x - decay + 1 + wind;
-      if(nx<0) nx=0; if(nx>=W) nx=W-1;
-      const dst=(y-1)*W+nx;
-      fire[dst]=Math.max(0, below-cool-extra);
-    }
+  for(let x=0;x<W;x++) for(let y=1;y<H;y++){
+    const below=fire[y*W+x]; const decay=(Math.random()*3)|0;
+    const cool=decay&1?1:0; const extra=(Math.random()*(10-intensity)/3)|0;
+    let nx=x-decay+1+wind; if(nx<0)nx=0; if(nx>=W)nx=W-1;
+    fire[(y-1)*W+nx]=Math.max(0,below-cool-extra);
   }
-  // flicker the source
-  for(let x=0;x<W;x++) fire[(H-1)*W+x]= MAX - ((Math.random()*4)|0);
+  for(let x=0;x<W;x++) fire[(H-1)*W+x]=MAX-((Math.random()*4)|0);
 }
 
-// rising sparks (embers drifting up into the wordmark zone)
-let sparks=[];
-function spawnSparks(){
+// sparks: rising embers + hammer-strike impact bursts off the cart
+let sparks=[], hammer=0;
+function spawn(){
   if(!embersOn) return;
-  if(Math.random()<0.55){
-    sparks.push({x:Math.random()*W, y:H-2, vy:-(0.25+Math.random()*0.5),
-      vx:(Math.random()-0.5)*0.6 + wind*0.25, life: 14+Math.random()*16});
+  if(Math.random()<0.5) sparks.push({x:Math.random()*W,y:H-2,vy:-(0.25+Math.random()*0.5),
+    vx:(Math.random()-0.5)*0.6+wind*0.25,life:14+Math.random()*16,hot:false});
+  hammer++;
+  if(hammer>13){ hammer=-((Math.random()*8)|0);
+    const n=4+((Math.random()*4)|0);
+    for(let k=0;k<n;k++) sparks.push({x:CART_CX+(Math.random()-0.5)*9,y:CART_TOP_Y+0.5,
+      vy:-(0.5+Math.random()*0.8),vx:(Math.random()-0.5)*1.6,life:9+Math.random()*9,hot:true});
   }
 }
-function moveSparks(){
-  for(const s of sparks){ s.y+=s.vy; s.x+=s.vx; s.life--; }
-  sparks=sparks.filter(s=>s.life>0 && s.y>0 && s.x>=0 && s.x<W);
-}
-function sparkAt(x,y){
-  for(const s of sparks){ if(Math.round(s.x)===x && Math.round(s.y)===y){
-    const t=s.life; const ch = t>22?"·":(t>12?"*":"+");
-    const color = t>22?"#fff3cf":(t>12?"#ffd24a":"#ff8c1a");
-    return {ch,color};
-  } }
-  return null;
-}
+function moveSparks(){ for(const s of sparks){ s.y+=s.vy; s.x+=s.vx; s.vy+=0.03; s.life--; }
+  sparks=sparks.filter(s=>s.life>0&&s.y>0&&s.x>=0&&s.x<W); }
+function sparkAt(x,y){ for(const s of sparks){ if(Math.round(s.x)===x&&Math.round(s.y)===y){
+  const t=s.life; const ch=t>18?"·":(t>9?"*":"+");
+  const color=s.hot?(t>12?"#fff3d6":"#ffd24a"):(t>18?"#fff3cf":(t>9?"#ffd24a":"#ff8c1a"));
+  return {ch,color}; } } return null; }
 
+function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function span(s,c){ return `<span style="color:${c}">${esc(s)}</span>`; }
 function render(){
-  // banner with borders; fire behind, overlay on top
-  let out="";
-  out += span("╔"+"═".repeat(W)+"╗", BORD)+"\n";
+  let out=span("╔"+"═".repeat(W)+"╗",BORD)+"\n";
   for(let y=0;y<H;y++){
-    let line="║", buf="", cur=null;
+    let line="║",buf="",cur=null;
     const flush=()=>{ if(buf){ line+=`<span style="color:${cur}">${esc(buf)}</span>`; buf=""; } };
     for(let x=0;x<W;x++){
-      let cell = overlay[y][x];
-      if(!cell){
-        const sp = sparkAt(x,y);
-        if(sp) cell=sp; else { const v=fire[y*W+x]; cell = v>0?PAL[v]:{ch:" ",color:null}; }
-      }
-      const cc = cell.pulse ? emberPulse() : cell.color;
+      let cell=overlay[y][x], cc;
+      if(cell){ cc=resolveColor(cell); }
+      else { const sp=sparkAt(x,y); if(sp){ cell=sp; cc=sp.color; }
+        else { const v=fire[y*W+x]; cell=v>0?PAL[v]:{ch:" ",color:null}; cc=cell.color; } }
       if(cc!==cur){ flush(); cur=cc; }
       buf+=cell.ch;
     }
-    flush();
-    line+="║";
-    out+=line+"\n";
+    flush(); line+="║"; out+=line+"\n";
   }
-  out += span("╟"+"─".repeat(W)+"╢", BORD)+"\n";
-  out += "║"+span("   TIGER0295      Apprentice      Forging Lv 1".padEnd(W).slice(0,W), MUT)+"║\n";
-  out += span("╚"+"═".repeat(W)+"╝", BORD)+"\n";
-  // menu (static)
-  out += "\n";
+  out+=span("╟"+"─".repeat(W)+"╢",BORD)+"\n";
+  out+="║"+span("   TIGER0295      Apprentice      Forging Lv 1".padEnd(W).slice(0,W),MUT)+"║\n";
+  out+=span("╚"+"═".repeat(W)+"╝",BORD)+"\n\n";
   const items=["LIBRARY","STATS","DIARIES","DEVICES","QUIT"];
-  out += span("╔"+"═".repeat(W)+"╗",BORD)+"\n";
-  out += "║"+span("   FORGE HUB".padEnd(W).slice(0,W),GOLD)+"║\n";
-  out += span("╟"+"─".repeat(W)+"╢",BORD)+"\n";
-  items.forEach((it,i)=>{ const sel=i===0;
-    const txt=(sel?"   >  ":"      ")+it;
-    out += "║"+span(txt.padEnd(W).slice(0,W), sel?GOLD:"#d8cdaf")+"║\n"; });
-  out += span("╟"+"─".repeat(W)+"╢",BORD)+"\n";
-  out += "║"+span("   up/down move   enter select   esc back   q quit".padEnd(W).slice(0,W),MUT)+"║\n";
-  out += span("╚"+"═".repeat(W)+"╝",BORD);
+  out+=span("╔"+"═".repeat(W)+"╗",BORD)+"\n";
+  out+="║"+span("   FORGE HUB".padEnd(W).slice(0,W),GOLD)+"║\n";
+  out+=span("╟"+"─".repeat(W)+"╢",BORD)+"\n";
+  items.forEach((it,i)=>{ const sel=i===0; const txt=(sel?"   >  ":"      ")+it;
+    out+="║"+span(txt.padEnd(W).slice(0,W),sel?GOLD:"#d8cdaf")+"║\n"; });
+  out+=span("╟"+"─".repeat(W)+"╢",BORD)+"\n";
+  out+="║"+span("   up/down move   enter select   esc back   q quit".padEnd(W).slice(0,W),MUT)+"║\n";
+  out+=span("╚"+"═".repeat(W)+"╝",BORD);
   document.getElementById("screen").innerHTML=out;
 }
-function span(s,c){ return `<span style="color:${c}">${esc(s)}</span>`; }
-function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
 let timer=null;
-function frame(){ frameCount++; if(!paused){ step(); spawnSparks(); moveSparks(); } render(); }
-function restart(){ if(timer) clearInterval(timer); timer=setInterval(frame, 1000/fps); }
+function frame(){ frameCount++; if(!paused){ step(); spawn(); moveSparks(); } render(); }
+function restart(){ if(timer) clearInterval(timer); timer=setInterval(frame,1000/fps); }
 restart();
 
-// controls
 const $=id=>document.getElementById(id);
-$("intensity").oninput=e=>{ intensity=+e.target.value; $("vInt").textContent=intensity; updPrompt(); };
-$("wind").oninput=e=>{ wind=+e.target.value; $("vWind").textContent=wind; updPrompt(); };
-$("fps").oninput=e=>{ fps=+e.target.value; $("vFps").textContent=fps; restart(); updPrompt(); };
+$("intensity").oninput=e=>{ intensity=+e.target.value; $("vInt").textContent=intensity; updP(); };
+$("wind").oninput=e=>{ wind=+e.target.value; $("vWind").textContent=wind; updP(); };
+$("fps").oninput=e=>{ fps=+e.target.value; $("vFps").textContent=fps; restart(); updP(); };
 $("embers").onclick=()=>{ embersOn=!embersOn; $("embers").classList.toggle("on",embersOn);
-  $("embers").textContent="Embers / Sparks: "+(embersOn?"On":"Off"); updPrompt(); };
+  $("embers").textContent="Embers / Sparks: "+(embersOn?"On":"Off"); updP(); };
 $("pause").onclick=()=>{ paused=!paused; $("pause").classList.toggle("on",paused);
   $("pause").textContent=paused?"Play":"Pause"; };
 $("palette").onclick=()=>{ paletteName=paletteName==="Lava"?"Ember":"Lava"; PAL=buildPalette();
-  $("palette").textContent="Palette: "+paletteName; updPrompt(); };
-function updPrompt(){ $("ptxt").innerHTML=
-  `Implement the forge hub with the <code>ANSI Shadow ROM FORGE</code> wordmark + anvil over an animated `+
-  `<code>Doom-fire</code> background (palette ${paletteName}, intensity ${intensity}, wind ${wind}, `+
-  `embers ${embersOn?"on":"off"}, ~${fps}fps) in ui/hub.py with curses color pairs + a non-blocking redraw loop.`; }
-$("copy").onclick=()=>{ const t=$("ptxt").textContent;
-  navigator.clipboard.writeText(t).then(()=>{ const b=$("copy"); b.textContent="Copied!"; setTimeout(()=>b.textContent="Copy pick",1200); }); };
-updPrompt();
+  $("palette").textContent="Palette: "+paletteName; updP(); };
+function updP(){ $("ptxt").innerHTML=
+  `Build the forge hub: <code>ANSI Shadow ROM FORGE</code> + an N64 cartridge forged on a flame-lit anvil over an animated `+
+  `<code>Doom-fire</code> background (palette ${paletteName}, intensity ${intensity}, wind ${wind}, embers ${embersOn?"on":"off"}, ~${fps}fps) `+
+  `in ui/hub.py with curses color pairs + a non-blocking redraw loop. No tagline.`; }
+$("copy").onclick=()=>{ navigator.clipboard.writeText($("ptxt").textContent).then(()=>{
+  const b=$("copy"); b.textContent="Copied!"; setTimeout(()=>b.textContent="Copy pick",1200); }); };
+updP();
 </script>
 </body>
 </html>
