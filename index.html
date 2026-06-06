@@ -35,7 +35,7 @@
 <body>
 <header>
   <h1>ROM Forge &mdash; Animated Hub Preview</h1>
-  <span class="sub">Forged-metal wordmark + an N64 cart on a flame-lit anvil. Ports to curses.</span>
+  <span class="sub">Clean-block wordmark + a real N64 cart on a flame-lit anvil. Ports to curses.</span>
 </header>
 <div class="wrap">
   <div class="rail">
@@ -62,7 +62,7 @@
   </div>
 </div>
 <script>
-const DATA = {"wordmark": ["██████╗  ██████╗ ███╗   ███╗", "██╔══██╗██╔═══██╗████╗ ████║", "██████╔╝██║   ██║██╔████╔██║", "██╔══██╗██║   ██║██║╚██╔╝██║", "██║  ██║╚██████╔╝██║ ╚═╝ ██║", "╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝", "", "███████╗ ██████╗ ██████╗  ██████╗ ███████╗", "██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝", "█████╗  ██║   ██║██████╔╝██║  ███╗█████╗", "██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝", "██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗", "╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝"], "anvil": ["     ▟██████████████▙", "  ▟████████████████████████▖", "  ████████████████████████", "   ▜██████████████████████▛", "         ████████", "         ████████", "       ▟██████████████▙", "   ▟████████████████████████▖", "   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀"], "cart": [" ▗▄▄▄▄▄▄▄▄▖ ", " █ ▏▕▏▕▏▕ █ ", " █▄▄▄▄▄▄▄▄█ ", " █ ╔════╗ █ ", " █ ║ROM ║ █ ", " █ ╚════╝ █ ", " █▀▀▀▀▀▀▀▀█ "]};
+const DATA = {"wordmark": ["██████   ██████  ███    ███", "██   ██ ██    ██ ████  ████", "██████  ██    ██ ██ ████ ██", "██   ██ ██    ██ ██  ██  ██", "██   ██  ██████  ██      ██", "", "███████  ██████  ██████   ██████  ███████", "██      ██    ██ ██   ██ ██       ██", "█████   ██    ██ ██████  ██   ███ █████", "██      ██    ██ ██   ██ ██    ██ ██", "██       ██████  ██   ██  ██████  ███████"], "anvil": ["     ▟██████████████▙", "  ▟████████████████████████▖", "  ████████████████████████", "   ▜██████████████████████▛", "         ████████", "         ████████", "       ▟██████████████▙", "   ▟████████████████████████▖", "   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀"], "cart": [" ▟████████████████▙ ", " ██████████████████ ", " ██▓▓▓▓▓▓▓▓▓▓▓▓▓▓██ ", " ██▓▓▓▓▓ROM▓▓▓▓▓▓██ ", " ██▓▓▓▓▓▓▓▓▓▓▓▓▓▓██ ", " ██████████████████ ", " ██::::::::::::::██ ", " ▜████████████████▛ "]};
 const W = 64;
 
 const GOLD="#ffd75f", GOLDDK="#c79a33", MUT="#9a948a", BORD="#c8912f";
@@ -109,13 +109,12 @@ const H=overlay.length;
 
 // dynamic (per-frame) overlay colors
 function cartColor(ch,i){
+  if(ch==="▓") return "#d8cdaf";                            // cream ROM-label sticker
+  if(ch==="R"||ch==="O"||ch==="M") return "#2a2a2e";        // dark label text
+  if(ch===":") return "#c89a3a";                            // brass connector pins
   if(i===CART_ROWS-1) return whiteHot();                    // white-hot base on the anvil
-  if(ch==="R"||ch==="O"||ch==="M") return emberPulse();     // glowing ROM label being forged
-  const cp=ch.codePointAt(0);
-  if(cp>=0x2550&&cp<=0x256C) return "#6b6c75";              // label frame (double-box)
-  if(ch==="▏"||ch==="▕") return "#9aa0aa";                  // grip ridges
-  if(ch==="▗"||ch==="▄"||ch==="▖") return "#aab0ba";        // top bevel highlight
-  return "#3e3f47";                                         // dark cart body
+  if(i===0) return "#5a5b63";                               // top bevel highlight
+  return "#36373d";                                         // dark cart body
 }
 function anvilColor(i,x,ch){
   const last=ANVIL_ROWS-1;
