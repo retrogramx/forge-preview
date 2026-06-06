@@ -51,26 +51,22 @@ function pad(s){ return (s+" ".repeat(W)).slice(0,W); }
 const TOP="╔"+"═".repeat(W)+"╗", BOT="╚"+"═".repeat(W)+"╝", SEP="╟"+"─".repeat(W)+"╢";
 function rowHTML(inner){ return sp("║",BORD)+inner+sp("║",BORD); }
 
-// ---- thin animated ember strip (2 rows) as the header accent ----
-const EH=2; const ember=new Int16Array(W*EH); const EMAX=24;
+// ---- thin ember-particle accent: sparse sparks drifting up + fading ----
+const EH=3; let embers=[];
 function emberStep(){
-  for(let x=0;x<W;x++) for(let y=1;y<EH;y++){
-    const below=ember[y*W+x]; const d=(Math.random()*3)|0;
-    let nx=x-d+1; if(nx<0)nx=0; if(nx>=W)nx=W-1;
-    ember[(y-1)*W+nx]=Math.max(0,below-(d&1));
-  }
-  for(let x=0;x<W;x++) ember[(EH-1)*W+x]=EMAX-((Math.random()*8)|0);
+  if(Math.random()<0.55) embers.push({x:Math.random()*W, y:EH-0.4,
+    vy:-(0.14+Math.random()*0.22), vx:(Math.random()-0.5)*0.25, life:9+Math.random()*12});
+  for(const e of embers){ e.y+=e.vy; e.x+=e.vx; e.life--; }
+  embers=embers.filter(e=>e.life>0 && e.y>=0 && e.x>=0 && e.x<W);
 }
 function emberRow(y){
+  const cells=new Array(W).fill(null);
+  for(const e of embers){ if(Math.round(e.y)===y){ const x=Math.round(e.x);
+    if(x>=0&&x<W){ const t=e.life; cells[x]= t>13?["*","#ffd86a"]:(t>7?["+","#ef7a18"]:[".","#9e240a"]); } } }
   let out="", buf="", cur=null;
-  const flush=()=>{ if(buf){ out+=`<span style="color:${cur}">${esc(buf)}</span>`; buf=""; } };
-  for(let x=0;x<W;x++){
-    const v=ember[y*W+x];
-    let ch=" ", col=null;
-    if(v>16){ ch="▓"; col="#e8a83a"; } else if(v>10){ ch="▒"; col="#d2641a"; }
-    else if(v>5){ ch="░"; col="#8c1808"; } else if(v>1){ ch="."; col="#5a0e04"; }
-    if(col!==cur){ flush(); cur=col; } buf+=ch;
-  }
+  const flush=()=>{ if(buf){ out+= cur?`<span style="color:${cur}">${esc(buf)}</span>`:esc(buf); buf=""; } };
+  for(let x=0;x<W;x++){ const c=cells[x]; const ch=c?c[0]:" "; const col=c?c[1]:null;
+    if(col!==cur){ flush(); cur=col; } buf+=ch; }
   flush();
   return rowHTML(out);
 }
