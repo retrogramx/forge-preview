@@ -35,7 +35,7 @@
 <body>
 <header>
   <h1>ROM Forge &mdash; Animated Hub Preview</h1>
-  <span class="sub">ROM FORGE filled with scrolling library words, over a hellfire anvil. Ports to curses.</span>
+  <span class="sub">ROM FORGE with library names rising as smokey imprints, over a hellfire anvil.</span>
 </header>
 <div class="wrap">
   <div class="rail">
@@ -140,14 +140,16 @@ const H=overlay.length;
 // dynamic (per-frame) overlay colors
 const STREAM = DATA.stream;
 function wmCell(cell){
-  // scrolling library words clipped to the letter shape; burnt-orange/gold/bronze
-  const off=Math.floor(frameCount/3), len=STREAM.length;
-  let idx=(((cell.c+off+cell.r*17)%len)+len)%len;
-  let ch=STREAM[idx];
+  // Solid burnt-orange/gold/bronze letterform with library names drifting
+  // UPWARD through it as faint smokey imprints (soot rising off hot iron).
+  const len=STREAM.length;
   const t=cell.Hh>1? cell.r/(cell.Hh-1):0;
-  let color=t<0.5? lerpHex("#a86a26","#e6b23a",t/0.5) : lerpHex("#e6b23a","#d2611a",(t-0.5)/0.5);
-  if(ch===" "){ ch="░"; color=lerpHex(color,"#180f04",0.58); }   // dim textured gap keeps letters solid
-  return {ch,color};
+  const base=t<0.5? lerpHex("#a86a26","#e6b23a",t/0.5) : lerpHex("#e6b23a","#d2611a",(t-0.5)/0.5);
+  const lineIdx=cell.r + Math.floor(frameCount*0.05);   // whole text lines rise over time
+  const idx=(((lineIdx*13 + cell.c)%len)+len)%len;
+  const ch=STREAM[idx];
+  if(ch===" ") return {ch:"█", color:base};             // solid molten metal
+  return {ch, color:lerpHex(base,"#311e08",0.45)};      // faint smokey word imprint
 }
 function anvilColor(i,x,ch){
   const last=ANVIL_ROWS-1;
