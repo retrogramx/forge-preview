@@ -35,7 +35,7 @@
 <body>
 <header>
   <h1>ROM Forge &mdash; Animated Hub Preview</h1>
-  <span class="sub">Diablo II palette: bronze wordmark, hellfire, gold N64 cart. Ports to curses.</span>
+  <span class="sub">Carved serif wordmark + a small 3D angled cart on a hellfire anvil. Ports to curses.</span>
 </header>
 <div class="wrap">
   <div class="rail">
@@ -62,7 +62,7 @@
   </div>
 </div>
 <script>
-const DATA = {"wordmark": ["██████   ██████  ███    ███", "██   ██ ██    ██ ████  ████", "██████  ██    ██ ██ ████ ██", "██   ██ ██    ██ ██  ██  ██", "██   ██  ██████  ██      ██", "", "███████  ██████  ██████   ██████  ███████", "██      ██    ██ ██   ██ ██       ██", "█████   ██    ██ ██████  ██   ███ █████", "██      ██    ██ ██   ██ ██    ██ ██", "██       ██████  ██   ██  ██████  ███████"], "anvil": ["       ████████████████", "    ████████████████████████", "    ████████████████████████", "     ████████████████████", "          ██████████", "          ██████████", "        ████████████████", "    ████████████████████████", "    ████████████████████████"], "cart": ["▟██████████████████████▙", "████████████████████████", "███┌────────────────┐███", "███│▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│███", "███│▓▓▓▓▓▓ROM▓▓▓▓▓▓▓│███", "███│▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│███", "███└────────────────┘███", "████████████████████████", "███::::::::::::::::::███", "▜██████████████████████▛"]};
+const DATA = {"wordmark": ["`7MM\"\"\"Mq.   .g8\"\"8q. `7MMM.     ,MMF'", "  MM   `MM..dP'    `YM. MMMb    dPMM", "  MM   ,M9 dM'      `MM M YM   ,M MM", "  MMmmdM9  MM        MM M  Mb  M' MM", "  MM  YM.  MM.      ,MP M  YM.P'  MM", "  MM   `Mb.`Mb.    ,dP' M  `YM'   MM", ".JMML. .JMM. `\"bmmd\"' .JML. `'  .JMML.", "", "`7MM\"\"\"YMM   .g8\"\"8q. `7MM\"\"\"Mq.   .g8\"\"\"bgd `7MM\"\"\"YMM", "  MM    `7 .dP'    `YM. MM   `MM..dP'     `M   MM    `7", "  MM   d   dM'      `MM MM   ,M9 dM'       `   MM   d", "  MM\"\"MM   MM        MM MMmmdM9  MM            MMmmMM", "  MM   Y   MM.      ,MP MM  YM.  MM.    `7MMF' MM   Y  ,", "  MM       `Mb.    ,dP' MM   `Mb.`Mb.     MM   MM     ,M", ".JMML.       `\"bmmd\"' .JMML. .JMM. `\"bmmmdPY .JMMmmmmMMM"], "anvil": ["       ████████████████", "    ████████████████████████", "    ████████████████████████", "     ████████████████████", "          ██████████", "          ██████████", "        ████████████████", "    ████████████████████████", "    ████████████████████████"], "cart": ["     ________", "    /▓▓▓▓▓▓▓/|", "   /▓▓ROM▓▓/ |", "  /_______/  |", "  |::::::::| /", "  |________|/"]};
 const W = 64;
 
 const GOLD="#ffd75f", GOLDDK="#c79a33", MUT="#9a948a", BORD="#c8912f";
@@ -99,16 +99,17 @@ function buildWordmark(){
   const isL=(r,c)=> r>=0&&r<Hh&&c>=0&&c<W && cells[r] && cells[r][c] && cells[r][c]!==" ";
   const grid=Array.from({length:gridH},()=>new Array(W).fill(null));
   for(let r=0;r<Hh;r++) for(let c=0;c<W;c++){ if(!isL(r,c)) continue;
-    const t=Hh>1? r/(Hh-1):0;   // antique bronze (top) -> gold -> bright ember-gold (bottom)
-    const base=t<0.5? lerpHex("#6e4a1c","#b8862c",t/0.5):lerpHex("#b8862c","#f0c850",(t-0.5)/0.5);
-    const topL=!isL(r-1,c)||!isL(r,c-1);
-    const botR=!isL(r+1,c)||!isL(r,c+1);
-    const col=topL? "#ffe28a" : (botR? lerpHex(base,"#241606",0.62) : base);   // gold bevel highlight
-    grid[r][c]={ch:"█",color:col};
+    const t=Hh>1? r/(Hh-1):0;   // dark bronze (top) -> bronze -> muted antique gold (bottom)
+    const base=t<0.5? lerpHex("#5e3e14","#9a701e",t/0.5):lerpHex("#9a701e","#c89832",(t-0.5)/0.5);
+    const isBlock = cells[r][c]==="█";   // bevel only applies to solid block fonts
+    const topL=isBlock&&(!isL(r-1,c)||!isL(r,c-1));
+    const botR=isBlock&&(!isL(r+1,c)||!isL(r,c+1));
+    const col=topL? "#e6c468" : (botR? lerpHex(base,"#1c1004",0.62) : base);
+    grid[r][c]={ch:cells[r][c],color:col};
   }
   for(let r=0;r<Hh;r++) for(let c=0;c<W;c++){ if(!isL(r,c)) continue;   // drop shadow +1,+1
     const sr=r+1, sc=c+1;
-    if(sr<gridH && sc<W && !grid[sr][sc] && !isL(sr,sc)) grid[sr][sc]={ch:"█",color:"#120c03"};
+    if(sr<gridH && sc<W && !grid[sr][sc] && !isL(sr,sc)) grid[sr][sc]={ch:cells[r][c],color:"#100a02"};
   }
   for(let r=0;r<gridH;r++) for(let c=0;c<W;c++){ if(grid[r][c]) continue;   // dark halo outline
     let near=false;
@@ -146,15 +147,13 @@ const H=overlay.length;
 
 // dynamic (per-frame) overlay colors
 function cartColor(ch,i){
-  if(ch==="▓") return "#15110b";                           // recessed dark label window
-  if(ch==="R"||ch==="O"||ch==="M") return "#ffce4a";       // glowing gold label text
-  const cp=ch.codePointAt(0);
-  if(cp>=0x2500&&cp<=0x257F) return "#5a4420";             // bronze engraved frame
-  if(ch===":") return "#7a5e1e";                           // recessed connector pins
-  if(i===CART_ROWS-1) return whiteHot();                   // white-hot base (forged on anvil)
-  if(i<=1) return "#e6c24e";                               // polished gold top highlight
-  if(i>=CART_ROWS-2) return "#9a7322";                     // lower-body gold shadow
-  return "#c89a36";                                        // gold cart body
+  // small 3D cart lying at an angle: lit top face, shaded front/side
+  if(ch==="▓") return "#d8c9a0";                           // cream top-face label
+  if(ch==="R"||ch==="O"||ch==="M") return "#6e4410";       // dark label text
+  if(ch===":") return "#6e5418";                           // connector pins (front)
+  if(ch==="|") return "#9a7322";                           // side faces (shadow)
+  if(i<=2) return "#e0b84e";                                // top-face edges (lit)
+  return "#b8862c";                                        // front edges (mid)
 }
 function anvilColor(i,x,ch){
   const last=ANVIL_ROWS-1;
@@ -212,7 +211,7 @@ function spawn(){
   hammer++;
   if(hammer>13){ hammer=-((Math.random()*8)|0);
     const n=4+((Math.random()*4)|0);
-    for(let k=0;k<n;k++) sparks.push({x:CART_CX+(Math.random()-0.5)*9,y:CART_TOP_Y+0.5,
+    for(let k=0;k<n;k++) sparks.push({x:CART_CX+(Math.random()-0.5)*6,y:CART_TOP_Y+0.5,
       vy:-(0.5+Math.random()*0.8),vx:(Math.random()-0.5)*1.6,life:9+Math.random()*9,hot:true});
   }
 }
