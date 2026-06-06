@@ -39,12 +39,12 @@
 </header>
 <div class="wrap">
   <div class="rail">
-    <div class="ctl"><label>Flame height / intensity <span class="val" id="vInt">5</span></label>
-      <input type="range" id="intensity" min="1" max="9" value="5"></div>
+    <div class="ctl"><label>Flame height / intensity <span class="val" id="vInt">3</span></label>
+      <input type="range" id="intensity" min="1" max="9" value="3"></div>
     <div class="ctl"><label>Wind <span class="val" id="vWind">0</span></label>
       <input type="range" id="wind" min="-3" max="3" value="0"></div>
-    <div class="ctl"><label>Speed (fps) <span class="val" id="vFps">22</span></label>
-      <input type="range" id="fps" min="8" max="30" value="22"></div>
+    <div class="ctl"><label>Speed (fps) <span class="val" id="vFps">12</span></label>
+      <input type="range" id="fps" min="8" max="30" value="12"></div>
     <button class="btn on" id="embers">Embers / Sparks: On</button>
     <div class="row"><button class="btn" id="pause">Pause</button>
       <button class="btn" id="palette">Palette: Lava</button></div>
@@ -173,7 +173,7 @@ function resolveColor(cell){
 // ---- fire field ----
 const fire=new Int16Array(W*H); const MAX=36;
 for(let x=0;x<W;x++) fire[(H-1)*W+x]=MAX;
-let wind=0,intensity=5,embersOn=true,paused=false,fps=22,paletteName="Lava";
+let wind=0,intensity=3,embersOn=true,paused=false,fps=12,paletteName="Lava";
 function buildPalette(){
   // Diablo II hellfire: blood-red base -> ember -> antique gold tips (darker, redder).
   const lava=[[0," ","#000000"],[7,".","#5a0e04"],[10,":","#7c1808"],[13,",","#9e240a"],
