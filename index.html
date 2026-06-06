@@ -35,7 +35,7 @@
 <body>
 <header>
   <h1>ROM Forge &mdash; Animated Hub Preview</h1>
-  <span class="sub">ROM FORGE with library names rising as smokey imprints, over a hellfire anvil.</span>
+  <span class="sub">Serif ROM FORGE over a hellfire anvil; library names scroll up behind the flames.</span>
 </header>
 <div class="wrap">
   <div class="rail">
@@ -62,7 +62,7 @@
   </div>
 </div>
 <script>
-const DATA = {"wordmark": ["██████   ██████  ███    ███", "██   ██ ██    ██ ████  ████", "██████  ██    ██ ██ ████ ██", "██   ██ ██    ██ ██  ██  ██", "██   ██  ██████  ██      ██", "", "███████  ██████  ██████   ██████  ███████", "██      ██    ██ ██   ██ ██       ██", "█████   ██    ██ ██████  ██   ███ █████", "██      ██    ██ ██   ██ ██    ██ ██", "██       ██████  ██   ██  ██████  ███████"], "anvil": ["       ████████████████", "    ████████████████████████", "    ████████████████████████", "     ████████████████████", "          ██████████", "          ██████████", "        ████████████████", "    ████████████████████████", "    ████████████████████████"], "stream": "SUPER MARIO   ZELDA   METROID   KIRBY   DONKEY KONG   STAR FOX   POKEMON   FIRE EMBLEM   FINAL FANTASY   CHRONO TRIGGER   DRAGON QUEST   CASTLEVANIA   MEGA MAN   CONTRA   SONIC   STREETS OF RAGE   GOLDEN AXE   PHANTASY STAR   SHINING FORCE   EARTHBOUND   SECRET OF MANA   METAL SLUG   STREET FIGHTER   KING OF FIGHTERS   GHOULS N GHOSTS   BOMBERMAN   NES   SNES   N64   GAME BOY   GBA   GENESIS   DREAMCAST   SATURN   PSX   NEO GEO   TURBOGRAFX   "};
+const DATA = {"wordmark": ["`7MM\"\"\"Mq.   .g8\"\"8q. `7MMM.     ,MMF'", "  MM   `MM..dP'    `YM. MMMb    dPMM", "  MM   ,M9 dM'      `MM M YM   ,M MM", "  MMmmdM9  MM        MM M  Mb  M' MM", "  MM  YM.  MM.      ,MP M  YM.P'  MM", "  MM   `Mb.`Mb.    ,dP' M  `YM'   MM", ".JMML. .JMM. `\"bmmd\"' .JML. `'  .JMML.", "", "`7MM\"\"\"YMM   .g8\"\"8q. `7MM\"\"\"Mq.   .g8\"\"\"bgd `7MM\"\"\"YMM", "  MM    `7 .dP'    `YM. MM   `MM..dP'     `M   MM    `7", "  MM   d   dM'      `MM MM   ,M9 dM'       `   MM   d", "  MM\"\"MM   MM        MM MMmmdM9  MM            MMmmMM", "  MM   Y   MM.      ,MP MM  YM.  MM.    `7MMF' MM   Y  ,", "  MM       `Mb.    ,dP' MM   `Mb.`Mb.     MM   MM     ,M", ".JMML.       `\"bmmd\"' .JMML. .JMM. `\"bmmmdPY .JMMmmmmMMM"], "anvil": ["       ████████████████", "    ████████████████████████", "    ████████████████████████", "     ████████████████████", "          ██████████", "          ██████████", "        ████████████████", "    ████████████████████████", "    ████████████████████████"], "stream": "SUPER MARIO   ZELDA   METROID   KIRBY   DONKEY KONG   STAR FOX   POKEMON   FIRE EMBLEM   FINAL FANTASY   CHRONO TRIGGER   DRAGON QUEST   CASTLEVANIA   MEGA MAN   CONTRA   SONIC   STREETS OF RAGE   GOLDEN AXE   PHANTASY STAR   SHINING FORCE   EARTHBOUND   SECRET OF MANA   METAL SLUG   STREET FIGHTER   KING OF FIGHTERS   GHOULS N GHOSTS   BOMBERMAN   NES   SNES   N64   GAME BOY   GBA   GENESIS   DREAMCAST   SATURN   PSX   NEO GEO   TURBOGRAFX   "};
 const W = 64;
 
 const GOLD="#ffd75f", GOLDDK="#c79a33", MUT="#9a948a", BORD="#c8912f";
@@ -99,11 +99,17 @@ function buildWordmark(){
   const isL=(r,c)=> r>=0&&r<Hh&&c>=0&&c<W && cells[r] && cells[r][c] && cells[r][c]!==" ";
   const grid=Array.from({length:gridH},()=>new Array(W).fill(null));
   for(let r=0;r<Hh;r++) for(let c=0;c<W;c++){ if(!isL(r,c)) continue;
-    grid[r][c]={dyn:"wm", r, c, Hh};   // letter area: filled with scrolling library words (per-frame)
+    const t=Hh>1? r/(Hh-1):0;   // bronze (top) -> gold -> burnt-orange (bottom)
+    const base=t<0.5? lerpHex("#644316","#b8842a",t/0.5):lerpHex("#b8842a","#cc6e1c",(t-0.5)/0.5);
+    const isBlock=cells[r][c]==="█";
+    const topL=isBlock&&(!isL(r-1,c)||!isL(r,c-1));
+    const botR=isBlock&&(!isL(r+1,c)||!isL(r,c+1));
+    const col=topL?"#e6c468":(botR?lerpHex(base,"#1c1004",0.62):base);
+    grid[r][c]={ch:cells[r][c],color:col};
   }
-  for(let r=0;r<Hh;r++) for(let c=0;c<W;c++){ if(!isL(r,c)) continue;   // solid drop shadow +1,+1
+  for(let r=0;r<Hh;r++) for(let c=0;c<W;c++){ if(!isL(r,c)) continue;   // drop shadow +1,+1
     const sr=r+1, sc=c+1;
-    if(sr<gridH && sc<W && !grid[sr][sc] && !isL(sr,sc)) grid[sr][sc]={ch:"█",color:"#100a02"};
+    if(sr<gridH && sc<W && !grid[sr][sc] && !isL(sr,sc)) grid[sr][sc]={ch:cells[r][c],color:"#100a02"};
   }
   for(let r=0;r<gridH;r++) for(let c=0;c<W;c++){ if(grid[r][c]) continue;   // dark halo outline
     let near=false;
@@ -139,17 +145,15 @@ const H=overlay.length;
 
 // dynamic (per-frame) overlay colors
 const STREAM = DATA.stream;
-function wmCell(cell){
-  // Solid burnt-orange/gold/bronze letterform with library names drifting
-  // UPWARD through it as faint smokey imprints (soot rising off hot iron).
+// Background library-name field, scrolling UP behind the flames. Returns the
+// glyph for (x,y) or null on a word-gap. The fire is drawn in front of this, so
+// names are only revealed in the cool gaps as the flames move.
+function bgWord(x,y){
   const len=STREAM.length;
-  const t=cell.Hh>1? cell.r/(cell.Hh-1):0;
-  const base=t<0.5? lerpHex("#a86a26","#e6b23a",t/0.5) : lerpHex("#e6b23a","#d2611a",(t-0.5)/0.5);
-  const lineIdx=cell.r + Math.floor(frameCount*0.05);   // whole text lines rise over time
-  const idx=(((lineIdx*13 + cell.c)%len)+len)%len;
+  const lineIdx=y + Math.floor(frameCount*0.05);   // whole text lines rise over time
+  const idx=(((lineIdx*13 + x)%len)+len)%len;
   const ch=STREAM[idx];
-  if(ch===" ") return {ch:"█", color:base};             // solid molten metal
-  return {ch, color:lerpHex(base,"#311e08",0.45)};      // faint smokey word imprint
+  return ch===" " ? null : ch;
 }
 function anvilColor(i,x,ch){
   const last=ANVIL_ROWS-1;
@@ -221,12 +225,15 @@ function render(){
     const flush=()=>{ if(buf){ line+=`<span style="color:${cur}">${esc(buf)}</span>`; buf=""; } };
     for(let x=0;x<W;x++){
       let cell=overlay[y][x], cc;
-      if(cell){
-        if(cell.dyn==="wm"){ cell=wmCell(cell); cc=cell.color; }
-        else cc=resolveColor(cell);
-      }
+      if(cell){ cc=resolveColor(cell); }
       else { const sp=sparkAt(x,y); if(sp){ cell=sp; cc=sp.color; }
-        else { const v=fire[y*W+x]; cell=v>0?PAL[v]:{ch:" ",color:null}; cc=cell.color; } }
+        else { const v=fire[y*W+x];
+          if(v>=10){ cell=PAL[v]; cc=cell.color; }              // flame at the forefront
+          else { const w=bgWord(x,y);
+            if(w){ cell={ch:w}; cc="#5a3410"; }                 // library name peeks through the gap
+            else if(v>0){ cell=PAL[v]; cc=cell.color; }         // faint ember
+            else { cell={ch:" ",color:null}; cc=null; } }
+        } }
       if(cc!==cur){ flush(); cur=cc; }
       buf+=cell.ch;
     }
