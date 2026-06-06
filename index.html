@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ROM Forge Hub - Animated Fire Preview</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#08080b; color:#d8d2c4;
+    font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif; }
+  header { padding:16px 22px; border-bottom:1px solid #20201a; display:flex; gap:16px; align-items:baseline; flex-wrap:wrap; }
+  header h1 { margin:0; font-size:16px; color:#ffd75f; letter-spacing:.04em; }
+  header .sub { color:#857f74; font-size:13px; }
+  .wrap { display:grid; grid-template-columns:230px 1fr; gap:16px; padding:16px; align-items:start; }
+  @media (max-width:820px){ .wrap{ grid-template-columns:1fr; } }
+  .rail { display:flex; flex-direction:column; gap:14px; }
+  .ctl { background:#121210; border:1px solid #2a2820; border-radius:9px; padding:11px 12px; }
+  .ctl label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:#7a7468; margin-bottom:7px; }
+  .ctl input[type=range]{ width:100%; }
+  .ctl .val { color:#ffe79a; font-size:12px; float:right; }
+  .btn { cursor:pointer; border:1px solid #2a2820; background:#16140f; color:#d8cdb6; border-radius:8px; padding:8px 12px; font-size:13px; width:100%; }
+  .btn.on { border-color:#c8912f; color:#ffe79a; background:#1c1810; }
+  .row { display:flex; gap:8px; }
+  .term { border-radius:10px; overflow:hidden; border:1px solid #2a2820; box-shadow:0 18px 50px -20px #000; background:#000; }
+  .bar { display:flex; align-items:center; gap:8px; padding:8px 12px; background:#141009; border-bottom:1px solid #20201a; color:#857f74; font-size:12px; }
+  .dot { width:11px; height:11px; border-radius:50%; }
+  pre.screen { margin:0; padding:14px 16px; background:#000; overflow-x:auto;
+    font-family:"SF Mono","Menlo","DejaVu Sans Mono",monospace; font-size:14px; line-height:1.0; white-space:pre; }
+  .promptbar { display:flex; gap:10px; margin-top:12px; background:#121210; border:1px solid #2a2820; border-radius:10px; padding:12px 14px; }
+  .promptbar .txt { flex:1; font-size:13px; line-height:1.45; } .promptbar code{ color:#ffe79a; }
+  .copy { cursor:pointer; border:1px solid #c8912f; background:#1c1810; color:#ffe79a; padding:8px 16px; border-radius:8px; align-self:center; white-space:nowrap; }
+  .stage { min-width:0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ROM Forge &mdash; Animated Hub Preview</h1>
+  <span class="sub">ANSI Shadow wordmark + anvil in a live Doom-fire wall. This algorithm ports straight to curses.</span>
+</header>
+<div class="wrap">
+  <div class="rail">
+    <div class="ctl"><label>Flame height / intensity <span class="val" id="vInt">5</span></label>
+      <input type="range" id="intensity" min="1" max="9" value="5"></div>
+    <div class="ctl"><label>Wind <span class="val" id="vWind">0</span></label>
+      <input type="range" id="wind" min="-3" max="3" value="0"></div>
+    <div class="ctl"><label>Speed (fps) <span class="val" id="vFps">22</span></label>
+      <input type="range" id="fps" min="8" max="30" value="22"></div>
+    <button class="btn on" id="embers">Embers / Sparks: On</button>
+    <div class="row"><button class="btn" id="pause">Pause</button>
+      <button class="btn" id="palette">Palette: Lava</button></div>
+  </div>
+  <div class="stage">
+    <div class="term">
+      <div class="bar"><span class="dot" style="background:#ff5f56"></span>
+        <span class="dot" style="background:#ffbd2e"></span>
+        <span class="dot" style="background:#27c93f"></span>
+        <span style="margin-left:6px">forge &mdash; hub</span></div>
+      <pre class="screen" id="screen"></pre>
+    </div>
+    <div class="promptbar"><div class="txt" id="ptxt"></div>
+      <button class="copy" id="copy">Copy pick</button></div>
+  </div>
+</div>
+<script>
+const DATA = {"wordmark": ["██████╗  ██████╗ ███╗   ███╗", "██╔══██╗██╔═══██╗████╗ ████║", "██████╔╝██║   ██║██╔████╔██║", "██╔══██╗██║   ██║██║╚██╔╝██║", "██║  ██║╚██████╔╝██║ ╚═╝ ██║", "╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝", "", "███████╗ ██████╗ ██████╗  ██████╗ ███████╗", "██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝", "█████╗  ██║   ██║██████╔╝██║  ███╗█████╗", "██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝", "██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗", "╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝"], "anvil": ["      ▄▄▄▄▄▄▄▄▄▄▄▄▄▄", "  ▗▄████████████████▙▄▄", " ▟███████████████████████▖", "  ▀▀▀▘████████████▝▀▀▀", "        ██████████", "        ██████████", "     ▄▄████████████▄▄", "  ▗▟████████████████████▙▖", "  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀"]};
+const W = 64;                 // inner columns
+const HMENU_GAP = 1;
+
+// ---- compose the opaque overlay (wordmark + tagline + anvil + status) ----
+function centerBlock(lines){
+  const w = Math.max(...lines.map(l=>[...l].length));
+  const left = Math.max(0, Math.floor((W-w)/2));
+  return lines.map(l=>" ".repeat(left)+l);
+}
+const GOLD="#ffd75f", GOLDDK="#c79a33", STEEL="#c9ced6", STEELDK="#8b9097",
+      EMBER="#ff9a2e", TAG="#ffe79a", BORD="#c8912f", MUT="#9a948a";
+
+// Build banner overlay grid rows (array of {ch,color}[])
+const overlay=[]; let bannerH=0;
+function put(rowsText, colorFn){
+  const block=centerBlock(rowsText);
+  block.forEach((line,i)=>{
+    const r=[]; const chars=[...line];
+    for(let x=0;x<W;x++){ const ch=chars[x]||" ";
+      if(ch===" "){ r.push(null); continue; }
+      const res=colorFn(ch,i,x);
+      r.push(typeof res==="string" ? {ch, color:res} : {ch, ...res});
+    }
+    overlay.push(r);
+  });
+}
+// cel-shaded steel ramp: deep shadow -> highlight
+const STEEL_RAMP=["#4a4f56","#6f757e","#9aa0a8","#c4c9d1","#eef2f8"];
+let frameCount=0;
+function lerpHex(a,b,t){ const A=[1,3,5].map(k=>parseInt(a.slice(k,k+2),16));
+  const B=[1,3,5].map(k=>parseInt(b.slice(k,k+2),16));
+  const c=A.map((v,k)=>Math.round(v+(B[k]-v)*t)); return `rgb(${c[0]},${c[1]},${c[2]})`; }
+function emberPulse(){ return lerpHex("#d2560f","#ffd86a",(Math.sin(frameCount*0.16)+1)/2); }
+function anvilColor(ch,i,x){
+  const last=DATA.anvil.length-1;
+  if(i===0) return {color:EMBER, pulse:true};                 // heated top bar (glows)
+  if(ch==="▀"||ch==="▝"||ch==="▘") return "#3f444b";          // undersides -> deep shadow
+  let b=2;
+  b += (x < W/2-1 ? 1 : 0) - (x > W/2+5 ? 1 : 0);             // light from upper-left
+  if(i<=2) b+=1;                                              // face catches light
+  if(i===6) b+=1;                                             // top of base catches light
+  if(i===last) b-=2;                                          // base sits in shadow
+  return STEEL_RAMP[Math.max(0,Math.min(4,b))];
+}
+function blank(n){ for(let k=0;k<n;k++) overlay.push(new Array(W).fill(null)); }
+
+// wordmark (box-drawing shadow chars -> darker gold; blocks -> bright gold)
+put(DATA.wordmark, (ch)=>{ const cp=ch.codePointAt(0);
+  return (cp>=0x2500&&cp<=0x257F)?GOLDDK:GOLD; });
+blank(1);
+// tagline
+put(["Welcome to ROM Forge"], ()=>TAG);
+blank(1);
+// anvil: top face row glows ember, rest steel (shadow underside darker)
+put(DATA.anvil, anvilColor);
+bannerH = overlay.length;
+
+// ---- fire field ----
+const H = bannerH;            // fire spans the whole banner height
+const fire = new Int16Array(W*H);
+const MAX=36;
+function seed(){ for(let x=0;x<W;x++) fire[(H-1)*W+x]=MAX; }
+seed();
+
+let wind=0, intensity=5, embersOn=true, paused=false, fps=22, paletteName="Lava";
+
+// palette: index 0..MAX -> {ch,color}
+function buildPalette(){
+  const lava=[
+    [0," ","#000000"],[3,".","#3a0c05"],[6,".","#5a1206"],[9,":","#7c1c08"],
+    [12,",","#9e240a"],[15,"*","#bf300c"],[18,"*","#d6480e"],[21,"▒","#ea6010"],
+    [25,"▓","#ff8418"],[29,"▓","#ffab2c"],[32,"█","#ffc83e"],[34,"█","#ffe06a"],[36,"█","#fff3cf"]];
+  const ember=[
+    [0," ","#000000"],[4,".","#241a06"],[9,":","#5a3a08"],[14,"*","#8a5a0c"],
+    [19,"▒","#b8800f"],[24,"▓","#e0a81a"],[29,"▓","#ffc83e"],[33,"█","#ffe06a"],[36,"█","#fff3cf"]];
+  const stops = paletteName==="Lava"?lava:ember;
+  const pal=[];
+  for(let v=0;v<=MAX;v++){ let s=stops[0]; for(const st of stops){ if(v>=st[0]) s=st; } pal[v]={ch:s[1],color:s[2]}; }
+  return pal;
+}
+let PAL=buildPalette();
+
+function step(){
+  // propagate upward with cooling + wind
+  for(let x=0;x<W;x++){
+    for(let y=1;y<H;y++){
+      const src=y*W+x;
+      const below=fire[src];
+      const decay=(Math.random()*3)|0;
+      const cool = decay & 1 ? 1 : 0;
+      const extra = (Math.random()*(10-intensity)/3)|0;   // higher intensity -> less cooling -> taller
+      let nx = x - decay + 1 + wind;
+      if(nx<0) nx=0; if(nx>=W) nx=W-1;
+      const dst=(y-1)*W+nx;
+      fire[dst]=Math.max(0, below-cool-extra);
+    }
+  }
+  // flicker the source
+  for(let x=0;x<W;x++) fire[(H-1)*W+x]= MAX - ((Math.random()*4)|0);
+}
+
+// rising sparks (embers drifting up into the wordmark zone)
+let sparks=[];
+function spawnSparks(){
+  if(!embersOn) return;
+  if(Math.random()<0.55){
+    sparks.push({x:Math.random()*W, y:H-2, vy:-(0.25+Math.random()*0.5),
+      vx:(Math.random()-0.5)*0.6 + wind*0.25, life: 14+Math.random()*16});
+  }
+}
+function moveSparks(){
+  for(const s of sparks){ s.y+=s.vy; s.x+=s.vx; s.life--; }
+  sparks=sparks.filter(s=>s.life>0 && s.y>0 && s.x>=0 && s.x<W);
+}
+function sparkAt(x,y){
+  for(const s of sparks){ if(Math.round(s.x)===x && Math.round(s.y)===y){
+    const t=s.life; const ch = t>22?"·":(t>12?"*":"+");
+    const color = t>22?"#fff3cf":(t>12?"#ffd24a":"#ff8c1a");
+    return {ch,color};
+  } }
+  return null;
+}
+
+function render(){
+  // banner with borders; fire behind, overlay on top
+  let out="";
+  out += span("╔"+"═".repeat(W)+"╗", BORD)+"\n";
+  for(let y=0;y<H;y++){
+    let line="║", buf="", cur=null;
+    const flush=()=>{ if(buf){ line+=`<span style="color:${cur}">${esc(buf)}</span>`; buf=""; } };
+    for(let x=0;x<W;x++){
+      let cell = overlay[y][x];
+      if(!cell){
+        const sp = sparkAt(x,y);
+        if(sp) cell=sp; else { const v=fire[y*W+x]; cell = v>0?PAL[v]:{ch:" ",color:null}; }
+      }
+      const cc = cell.pulse ? emberPulse() : cell.color;
+      if(cc!==cur){ flush(); cur=cc; }
+      buf+=cell.ch;
+    }
+    flush();
+    line+="║";
+    out+=line+"\n";
+  }
+  out += span("╟"+"─".repeat(W)+"╢", BORD)+"\n";
+  out += "║"+span("   TIGER0295      Apprentice      Forging Lv 1".padEnd(W).slice(0,W), MUT)+"║\n";
+  out += span("╚"+"═".repeat(W)+"╝", BORD)+"\n";
+  // menu (static)
+  out += "\n";
+  const items=["LIBRARY","STATS","DIARIES","DEVICES","QUIT"];
+  out += span("╔"+"═".repeat(W)+"╗",BORD)+"\n";
+  out += "║"+span("   FORGE HUB".padEnd(W).slice(0,W),GOLD)+"║\n";
+  out += span("╟"+"─".repeat(W)+"╢",BORD)+"\n";
+  items.forEach((it,i)=>{ const sel=i===0;
+    const txt=(sel?"   >  ":"      ")+it;
+    out += "║"+span(txt.padEnd(W).slice(0,W), sel?GOLD:"#d8cdaf")+"║\n"; });
+  out += span("╟"+"─".repeat(W)+"╢",BORD)+"\n";
+  out += "║"+span("   up/down move   enter select   esc back   q quit".padEnd(W).slice(0,W),MUT)+"║\n";
+  out += span("╚"+"═".repeat(W)+"╝",BORD);
+  document.getElementById("screen").innerHTML=out;
+}
+function span(s,c){ return `<span style="color:${c}">${esc(s)}</span>`; }
+function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+let timer=null;
+function frame(){ frameCount++; if(!paused){ step(); spawnSparks(); moveSparks(); } render(); }
+function restart(){ if(timer) clearInterval(timer); timer=setInterval(frame, 1000/fps); }
+restart();
+
+// controls
+const $=id=>document.getElementById(id);
+$("intensity").oninput=e=>{ intensity=+e.target.value; $("vInt").textContent=intensity; updPrompt(); };
+$("wind").oninput=e=>{ wind=+e.target.value; $("vWind").textContent=wind; updPrompt(); };
+$("fps").oninput=e=>{ fps=+e.target.value; $("vFps").textContent=fps; restart(); updPrompt(); };
+$("embers").onclick=()=>{ embersOn=!embersOn; $("embers").classList.toggle("on",embersOn);
+  $("embers").textContent="Embers / Sparks: "+(embersOn?"On":"Off"); updPrompt(); };
+$("pause").onclick=()=>{ paused=!paused; $("pause").classList.toggle("on",paused);
+  $("pause").textContent=paused?"Play":"Pause"; };
+$("palette").onclick=()=>{ paletteName=paletteName==="Lava"?"Ember":"Lava"; PAL=buildPalette();
+  $("palette").textContent="Palette: "+paletteName; updPrompt(); };
+function updPrompt(){ $("ptxt").innerHTML=
+  `Implement the forge hub with the <code>ANSI Shadow ROM FORGE</code> wordmark + anvil over an animated `+
+  `<code>Doom-fire</code> background (palette ${paletteName}, intensity ${intensity}, wind ${wind}, `+
+  `embers ${embersOn?"on":"off"}, ~${fps}fps) in ui/hub.py with curses color pairs + a non-blocking redraw loop.`; }
+$("copy").onclick=()=>{ const t=$("ptxt").textContent;
+  navigator.clipboard.writeText(t).then(()=>{ const b=$("copy"); b.textContent="Copied!"; setTimeout(()=>b.textContent="Copy pick",1200); }); };
+updPrompt();
+</script>
+</body>
+</html>
